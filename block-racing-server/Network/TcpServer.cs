@@ -7,6 +7,9 @@ public class TcpServer
 {
     private TcpListener? _listener;
 
+    private readonly SessionManager _sessionManager = new();
+    private readonly PacketManager _packetManager = new();
+
     public async Task StartAsync(int port)
     {
         _listener = new TcpListener(IPAddress.Any, port);
@@ -20,8 +23,12 @@ public class TcpServer
             {
                 TcpClient client = await _listener.AcceptTcpClientAsync();
 
-                PlayerSession session = new PlayerSession(client);
-                _ = session.StartAsync(); // 세션 시작
+                PlayerSession session =
+                    new(client, _packetManager, _sessionManager);
+
+                _sessionManager.Add(session);
+
+                _ = Task.Run(session.StartAsync);
             }
         }
         catch (Exception ex)

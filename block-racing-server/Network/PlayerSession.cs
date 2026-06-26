@@ -1,4 +1,5 @@
-﻿using System;
+﻿using block_racing_server.Network.Packet;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Sockets;
@@ -9,14 +10,25 @@ namespace block_racing_server.Network;
 
 public class PlayerSession
 {
+    public int Id { get; set; }
+
     private readonly TcpClient _client;
     private readonly NetworkStream _stream;
 
-    public PlayerSession(TcpClient client)
+    private readonly PacketManager _packetManager;
+    private readonly SessionManager _sessionManager;
+    private readonly ReceiveBuffer _receiveBuffer;
+    
+    public PlayerSession(TcpClient client, PacketManager packetManager, SessionManager sessionManager)
     {
         _client = client;
         _stream = client.GetStream();
+
+        _packetManager = packetManager;
+        _sessionManager = sessionManager;
+        _receiveBuffer = new ReceiveBuffer();
     }
+
 
     public async Task StartAsync()
     {
@@ -33,14 +45,18 @@ public class PlayerSession
         {
             while (true)
             {
-                int received = await _stream.ReadAsync(buffer);
+                int received =
+                    await _stream.ReadAsync(buffer);
 
                 if (received == 0)
                     break;
 
-                string message = Encoding.UTF8.GetString(buffer, 0, received);
+                _receiveBuffer.Append(buffer, received);
 
-                Console.WriteLine($"Receive : {message}");
+                while (_receiveBuffer.TryReadPacket(out byte[] packet))
+                {
+                    ProcessPacket(packet);
+                }
             }
         }
         catch (Exception ex)
@@ -53,15 +69,29 @@ public class PlayerSession
         }
     }
 
-    public async Task SendAsync(string message)
+    private void ProcessPacket(byte[] packet)
     {
-        byte[] data = Encoding.UTF8.GetBytes(message);
+        PacketReader reader = new(packet);
 
+        // ❗ Length skip
+        ushort length = reader.ReadUInt16();
+
+        ushort packetId = reader.ReadUInt16();
+
+        PacketId id = (PacketId)packetId;
+
+        _packetManager.Process(this, id, reader);
+    }
+
+    public async Task SendAsync(byte[] data)
+    {
         await _stream.WriteAsync(data);
     }
 
     private void Disconnect()
     {
+        _sessionManager.Remove(this);
+
         _stream.Close();
         _client.Close();
     }
