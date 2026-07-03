@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace block_racing_server.Network.Packet;
+namespace block_racing_server.Network;
 
 public enum PacketId : ushort
 {

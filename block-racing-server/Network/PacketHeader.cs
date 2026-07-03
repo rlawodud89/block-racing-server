@@ -1,5 +1,4 @@
-﻿
-namespace block_racing_server.Network.Packet;
+﻿namespace block_racing_server.Network;
 
 public struct PacketHeader
 {

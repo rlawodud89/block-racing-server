@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-namespace block_racing_server.Network.Packet;
+namespace block_racing_server.Network;
 
 public class PacketReader
 {
