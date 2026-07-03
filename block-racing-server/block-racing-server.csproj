@@ -12,7 +12,6 @@
     <Folder Include="Core\" />
     <Folder Include="Game\" />
     <Folder Include="Database\" />
-    <Folder Include="Network\Handler\" />
   </ItemGroup>
 
 </Project>
