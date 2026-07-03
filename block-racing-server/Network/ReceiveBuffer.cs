@@ -1,6 +1,4 @@
-﻿using block_racing_server.Network.Packet;
-
-namespace block_racing_server.Network;
+﻿namespace block_racing_server.Network;
 
 public class ReceiveBuffer
 {
