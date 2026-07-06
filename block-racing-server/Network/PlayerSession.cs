@@ -91,8 +91,10 @@ public class PlayerSession
 
     private void Disconnect()
     {
-        _sessionManager.Remove(this);
         _gameManager.UnregisterPlayer(Player);
+
+        _sessionManager.Remove(this);
+       
 
         _stream.Close();
         _client.Close();
@@ -116,7 +118,7 @@ public class PlayerSession
         }
         else
         {
-            _gameManager.CancleMatch(Player);
+            _gameManager.CancelMatch(Player);
         }
     }
 }

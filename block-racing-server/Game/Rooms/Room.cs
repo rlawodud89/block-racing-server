@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using block_racing_server.Game.Players;
+﻿using block_racing_server.Game.Players;
+using block_racing_server.Game.Matchs;
 
 namespace block_racing_server.Game.Rooms;
 
@@ -34,6 +29,26 @@ public class Room
         if (_players.Count == 2)
         {
             StartGame();
+        }
+
+        return true;
+    }
+
+    public bool RemovePlayer(Player player)
+    {
+        if (!_players.Remove(player))
+            return false;
+
+        player.Room = null;
+        player.MatchState = MatchState.None;
+
+        Console.WriteLine($"Room {Id}: Player removed");
+
+        // 방 종료 처리
+        if (_players.Count == 0)
+        {
+            IsStarted = false;
+            Console.WriteLine($"Room {Id} closed (empty)");
         }
 
         return true;

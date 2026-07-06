@@ -21,6 +21,13 @@ public class MatchMaker
         _players.TryAdd(player.Id, player);
     }
 
+    public void Unregister(Player player)
+    {
+        player.MatchState = MatchState.None;
+
+        _players.TryRemove(player.Id, out _);
+    }
+
     public void Enqueue(Player player)
     {
         if (player.MatchState != MatchState.None)

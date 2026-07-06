@@ -6,40 +6,56 @@ namespace block_racing_server.Game;
 
 public class GameManager
 {
-    public RoomManager RoomManager { get; }
-    public MatchMaker MatchMaker { get; }
-
-    private readonly List<Player> _players = new();
+    public RoomManager _roomManager { get; }
+    public MatchMaker _matchMaker { get; }
 
     public GameManager(RoomManager roomManager)
     {
-        RoomManager = roomManager;
-        MatchMaker = new MatchMaker(roomManager);
+        _roomManager = roomManager;
+        _matchMaker = new MatchMaker(roomManager);
     }
 
     public void Update()
     {
-        MatchMaker.TryMatch();
+        _matchMaker.TryMatch();
+
+        foreach (var room in _roomManager.Rooms)
+        {
+            room.Update();
+        }
     }
 
     public void RegisterPlayer(Player player)
     {
-        _players.Add(player);
-        MatchMaker.Register(player);
+        if (player == null ||
+            player.Room != null ||
+            player.MatchState != MatchState.None)
+            return;
+
+        _matchMaker.Register(player);
     }
 
     public void UnregisterPlayer(Player player)
     {
-        _players.Remove(player);
+        if (player == null) return;
+
+        player.MatchState = MatchState.None; // 먼저 상태 차단
+
+        _matchMaker.Unregister(player);
+
+        var room = player.Room;
+        player.Room = null;
+
+        room?.RemovePlayer(player);
     }
 
     public void EnqueueMatch(Player player)
     {
-        MatchMaker.Enqueue(player);
+        _matchMaker.Enqueue(player);
     }
 
-    public void CancleMatch(Player player)
+    public void CancelMatch(Player player)
     {
-        MatchMaker.Cancel(player);
+        _matchMaker.Cancel(player);
     }
 }
