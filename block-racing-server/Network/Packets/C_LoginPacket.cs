@@ -1,9 +1,9 @@
 ﻿
 namespace block_racing_server.Network.Packets;
 
-public class LoginPacket : IPacket
+public class C_LoginPacket : IPacket
 {
-    public PacketId PacketId => PacketId.Login;
+    public PacketId PacketId => PacketId.C_Login;
 
     public string Nickname { get; set; } = string.Empty;
 

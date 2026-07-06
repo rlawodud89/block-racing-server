@@ -44,7 +44,7 @@ public class MatchMaker
         player.MatchState = MatchState.None;
     }
 
-    public void TryMatch()
+    public async void TryMatch()
     {
         var candidates = _players.Values
             .Where(p => p.MatchState == MatchState.Queued)
@@ -63,8 +63,8 @@ public class MatchMaker
 
         var room = _roomManager.CreateRoom();
 
-        room.AddPlayer(p1);
-        room.AddPlayer(p2);
+        await room.AddPlayer(p1);
+        await room.AddPlayer(p2);
 
         p1.MatchState = MatchState.InRoom;
         p2.MatchState = MatchState.InRoom;

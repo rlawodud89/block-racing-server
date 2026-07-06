@@ -1,5 +1,8 @@
-﻿using block_racing_server.Game.Players;
-using block_racing_server.Game.Matchs;
+﻿using block_racing_server.Game.Matchs;
+using block_racing_server.Game.Players;
+using block_racing_server.Network;
+using block_racing_server.Network.Packets;
+using System.Net.Sockets;
 
 namespace block_racing_server.Game.Rooms;
 
@@ -7,9 +10,12 @@ public class Room
 {
     public int Id { get; }
 
+    public RoomState State { get; private set; } = RoomState.Waiting;
+
     private readonly List<Player> _players = new();
 
-    public bool IsStarted { get; private set; }
+    private readonly Dictionary<int, bool> _readyMap = new();
+
 
     public Room(int id)
     {
@@ -18,7 +24,7 @@ public class Room
 
     public IReadOnlyList<Player> Players => _players;
 
-    public bool AddPlayer(Player player)
+    public async Task<bool> AddPlayer(Player player)
     {
         if (_players.Count >= 2)
             return false;
@@ -26,10 +32,23 @@ public class Room
         _players.Add(player);
         player.Room = this;
 
+        _readyMap[player.Id] = false;
+
         if (_players.Count == 2)
         {
-            StartGame();
+            State = RoomState.Ready;
         }
+
+        var packet = new S_MatchFoundPacket
+        {
+            RoomId = Id
+        };
+
+        PacketWriter writer = new((ushort)packet.PacketId);
+        packet.Write(writer);
+        byte[] bytes = writer.ToArray();
+
+        await player.Session.SendAsync(bytes);
 
         return true;
     }
@@ -47,22 +66,68 @@ public class Room
         // 방 종료 처리
         if (_players.Count == 0)
         {
-            IsStarted = false;
+
             Console.WriteLine($"Room {Id} closed (empty)");
         }
 
         return true;
     }
 
-    private void StartGame()
+    public void SetReady(Player player)
     {
-        IsStarted = true;
+        if (State != RoomState.Ready)
+            return;
 
-        Console.WriteLine($"Room {Id} Game Start!");
+        _readyMap[player.Id] = true;
+
+        if (_readyMap.Values.All(v => v))
+        {
+            StartGameSync();
+        }
+    }
+
+    private async void StartGameSync()
+    {
+        State = RoomState.Starting;
+
+        Console.WriteLine($"Room {Id} START GAME SYNC");
+
+        var packet = new S_StartGamePacket
+        {
+            RoomId = Id
+        };
+
+        PacketWriter writer = new((ushort)packet.PacketId);
+        packet.Write(writer);
+        byte[] bytes = writer.ToArray();
+
+        foreach (var player in _players)
+        {
+            await player.Session.SendAsync(bytes);
+        }
+
+        State = RoomState.Playing;
     }
 
     public void Update()
     {
-        
+        if (State != RoomState.Playing)
+            return;
+
+        Tick();
+        Sync();
+    }
+
+    private void Tick()
+    {
+        // 블록 이동, 충돌 등
+    }
+
+    private void Sync()
+    {
+        foreach (var p in _players)
+        {
+            // 상태 데이터 패킷 전송
+        }
     }
 }
