@@ -15,9 +15,9 @@ public class GameManager
         _matchMaker = new MatchMaker(roomManager);
     }
 
-    public void Update()
+    public async Task Update()
     {
-        _matchMaker.TryMatch();
+        await _matchMaker.TryMatch();
 
         foreach (var room in _roomManager.Rooms)
         {

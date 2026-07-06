@@ -16,6 +16,8 @@ public class Room
 
     private readonly Dictionary<int, bool> _readyMap = new();
 
+    private readonly object _lock = new();
+
 
     public Room(int id)
     {
@@ -29,6 +31,7 @@ public class Room
         if (_players.Count >= 2)
             return false;
 
+        Console.WriteLine($"Room {Id}: Player {player.Id} added");
         _players.Add(player);
         player.Room = this;
 
@@ -61,13 +64,28 @@ public class Room
         player.Room = null;
         player.MatchState = MatchState.None;
 
-        Console.WriteLine($"Room {Id}: Player removed");
+        if (_players.Count == 1)
+        {
+            Player remain = _players[0];
 
-        // 방 종료 처리
+            switch (State)
+            {
+                case RoomState.Ready:
+                case RoomState.Starting:
+                    // TODO : MatchCanceledPacket
+                    remain.MatchState = MatchState.None;
+                    break;
+
+                case RoomState.Playing:
+                    // TODO : GameEndPacket (Win)
+                    State = RoomState.Ended;
+                    break;
+            }
+        }
+
         if (_players.Count == 0)
         {
-
-            Console.WriteLine($"Room {Id} closed (empty)");
+            // TODO : RoomManager.RemoveRoom(this);
         }
 
         return true;
@@ -75,18 +93,29 @@ public class Room
 
     public void SetReady(Player player)
     {
-        if (State != RoomState.Ready)
-            return;
+        bool shouldStart = false;
 
-        _readyMap[player.Id] = true;
-
-        if (_readyMap.Values.All(v => v))
+        lock (_lock)
         {
-            StartGameSync();
+            if (State != RoomState.Ready)
+                return;
+
+            _readyMap[player.Id] = true;
+
+            if (_readyMap.Values.All(v => v))
+            {
+                State = RoomState.Starting;
+                shouldStart = true;
+            }
+        }
+
+        if (shouldStart)
+        {
+            _ = StartGameSync();
         }
     }
 
-    private async void StartGameSync()
+    private async Task StartGameSync()
     {
         State = RoomState.Starting;
 

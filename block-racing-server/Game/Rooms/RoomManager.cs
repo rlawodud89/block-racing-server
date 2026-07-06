@@ -20,6 +20,8 @@ public class RoomManager
 
         _rooms.Add(id, room);
 
+        Console.WriteLine($"Room {id} created.");
+
         return room;
     }
 

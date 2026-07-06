@@ -44,7 +44,7 @@ public class MatchMaker
         player.MatchState = MatchState.None;
     }
 
-    public async void TryMatch()
+    public async Task TryMatch()
     {
         var candidates = _players.Values
             .Where(p => p.MatchState == MatchState.Queued)
