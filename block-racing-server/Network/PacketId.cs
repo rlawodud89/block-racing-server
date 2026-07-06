@@ -8,7 +8,6 @@ namespace block_racing_server.Network;
 
 public enum PacketId : ushort
 {
-    C_Chat = 1,
-
-    S_Chat = 100,
+    Login = 100,
+    MatchRequest = 101,
 }

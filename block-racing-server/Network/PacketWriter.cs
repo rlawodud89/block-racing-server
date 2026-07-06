@@ -16,6 +16,11 @@ public class PacketWriter
         _buffer.AddRange(BitConverter.GetBytes(packetId));
     }
 
+    public void Write(bool value)
+    {
+        _buffer.AddRange(BitConverter.GetBytes(value));
+    }
+
     public void Write(int value)
     {
         _buffer.AddRange(BitConverter.GetBytes(value));
