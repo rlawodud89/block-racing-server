@@ -12,9 +12,9 @@ public class Player
 
     public MatchState MatchState { get; set; } = MatchState.None;
 
-    public int Lane { get; set; }
+    public PlayerInput Input { get; } = new PlayerInput();
 
-    public bool IsReady { get; set; }
+    public int Lane { get; set; }
 
     public bool IsStunned { get; set; }
 

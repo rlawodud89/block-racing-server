@@ -2,6 +2,7 @@
 using block_racing_server.Game.Players;
 using block_racing_server.Network;
 using block_racing_server.Network.Packets;
+using System.Collections.Concurrent;
 using System.Net.Sockets;
 
 namespace block_racing_server.Game.Rooms;
@@ -17,6 +18,10 @@ public class Room
     private readonly Dictionary<int, bool> _readyMap = new();
 
     private readonly object _lock = new();
+
+    private long _tickCount = 0;
+
+    private readonly ConcurrentQueue<PlayerInputCommand> _inputQueue = new();
 
 
     public Room(int id)
@@ -117,8 +122,6 @@ public class Room
 
     private async Task StartGameSync()
     {
-        State = RoomState.Starting;
-
         Console.WriteLine($"Room {Id} START GAME SYNC");
 
         var packet = new S_StartGamePacket
@@ -149,7 +152,15 @@ public class Room
 
     private void Tick()
     {
-        // 블록 이동, 충돌 등
+        _tickCount++;
+
+        ProcessInput();
+
+        UpdatePlayers();
+
+        UpdateBlocks();
+
+        CheckCollision();
     }
 
     private void Sync()
@@ -158,5 +169,54 @@ public class Room
         {
             // 상태 데이터 패킷 전송
         }
+    }
+
+    public void EnqueueInput(Player player, InputType type)
+    {
+        _inputQueue.Enqueue(
+            new PlayerInputCommand(player, type));
+    }
+
+    private void ProcessInput()
+    {
+        while (_inputQueue.TryDequeue(out var input))
+        {
+            switch (input.Type)
+            {
+                case InputType.Left:
+                    //input.Player.MoveLeft();
+                    break;
+
+                case InputType.Right:
+                    //input.Player.MoveRight();
+                    break;
+
+                case InputType.Mode:
+                    //input.Player.ChangeMode();
+                    break;
+
+                case InputType.Drop:
+                    //input.Player.DropBlock();
+                    break;
+
+                case InputType.Rotate:
+                    //input.Player.RotateBlock();
+                    break;
+            }
+        }
+    }
+
+    private void UpdatePlayers()
+    {
+
+    }
+
+    private void UpdateBlocks()
+    {
+
+    }
+
+    private void CheckCollision()
+    {
     }
 }
