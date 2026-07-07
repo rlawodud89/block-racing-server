@@ -1,15 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using block_racing_server.Game.Players;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
+
+using block_racing_server.Game;
 
 namespace block_racing_server.Network;
 
 public class PlayerSession
 {
     public int Id { get; set; }
+    public Player? Player { get; private set; }
 
     private readonly TcpClient _client;
     private readonly NetworkStream _stream;
@@ -17,8 +16,10 @@ public class PlayerSession
     private readonly PacketManager _packetManager;
     private readonly SessionManager _sessionManager;
     private readonly ReceiveBuffer _receiveBuffer;
-    
-    public PlayerSession(TcpClient client, PacketManager packetManager, SessionManager sessionManager)
+
+    private readonly GameManager _gameManager;
+
+    public PlayerSession(TcpClient client, PacketManager packetManager, SessionManager sessionManager, GameManager gameManager)
     {
         _client = client;
         _stream = client.GetStream();
@@ -26,6 +27,7 @@ public class PlayerSession
         _packetManager = packetManager;
         _sessionManager = sessionManager;
         _receiveBuffer = new ReceiveBuffer();
+        _gameManager = gameManager;
     }
 
 
@@ -72,7 +74,7 @@ public class PlayerSession
     {
         PacketReader reader = new(packet);
 
-        // ❗ Length skip
+        // Length skip
         ushort length = reader.ReadUInt16();
 
         ushort packetId = reader.ReadUInt16();
@@ -89,10 +91,35 @@ public class PlayerSession
 
     private void Disconnect()
     {
+        _gameManager.UnregisterPlayer(Player);
+
         _sessionManager.Remove(this);
+       
 
         _stream.Close();
         _client.Close();
+    }
+
+
+    public void OnLogin(string nickname)
+    {
+        Player = new Player(this, Id, nickname);
+
+        _gameManager.RegisterPlayer(Player);
+    }
+
+    public void OnMatchRequest(bool isMatch)
+    {
+        if (Player == null)
+            return;
+        if (isMatch)
+        {
+            _gameManager.EnqueueMatch(Player);
+        }
+        else
+        {
+            _gameManager.CancelMatch(Player);
+        }
     }
 }
 

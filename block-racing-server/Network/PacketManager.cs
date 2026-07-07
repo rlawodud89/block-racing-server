@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using block_racing_server.Network.Packet;
-using block_racing_server.Network.Handler;
+using block_racing_server.Network.Packets;
+using block_racing_server.Network.Handlers;
 
 namespace block_racing_server.Network;
 
@@ -15,7 +15,9 @@ public class PacketManager
 
     public PacketManager()
     {
-        Register<CChatPacket>(PacketId.C_Chat, ChatHandler.Handle);
+        Register<C_LoginPacket>(PacketId.C_Login, CLoginHandler.Handle);
+        Register<C_MatchRequestPacket>(PacketId.C_MatchRequest, C_MatchRequestHandler.Handle);
+        Register<C_ReadyPacket>(PacketId.C_Ready, C_ReadyHandler.Handle);
     }
 
     public void Register<T>(

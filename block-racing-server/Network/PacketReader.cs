@@ -19,6 +19,14 @@ public class PacketReader
             throw new Exception($"PacketReader overflow: pos={_pos}, size={size}, len={_buffer.Length}");
     }
 
+    public bool ReadBool()
+    {
+        EnsureSize(sizeof(bool));
+        bool value = BitConverter.ToBoolean(_buffer, _pos);
+        _pos += sizeof(bool);
+        return value;
+    }
+
     public ushort ReadUInt16()
     {
         EnsureSize(sizeof(ushort));
