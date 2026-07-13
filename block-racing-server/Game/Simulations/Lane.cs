@@ -16,12 +16,15 @@ public class Lane
 
     public Queue<AttackPiece> PendingAttacks { get; }
 
+    public List<FlyingBlock> FlyingBlocks { get; }
+
 
     public Lane()
     {
         Grid = CreateGrid();
 
         PendingAttacks = new();
+        FlyingBlocks = new();
     }
 
 

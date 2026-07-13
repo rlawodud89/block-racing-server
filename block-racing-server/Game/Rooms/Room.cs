@@ -20,11 +20,7 @@ public class Room
 
     private readonly object _lock = new();
 
-    private long _tickCount = 0;
-
-    private readonly ConcurrentQueue<PlayerInputCommand> _inputQueue = new();
-
-    public GameState? _gameState { get; private set; }
+    private GameSimulation? _simulation;
 
 
     public Room(int id)
@@ -127,12 +123,20 @@ public class Room
     {
         Console.WriteLine($"Room {Id} START GAME SYNC");
 
-        _gameState = new GameState();
+        GameState state = new();
+
 
         foreach (Player player in _players)
         {
-            _gameState.AddPlayer(player);
+            state.AddPlayer(player);
+
+            player.SetCurrentPiece(
+                state.CreatePiece()
+            );
         }
+
+        _simulation = new GameSimulation(state);
+
 
         var packet = new S_StartGamePacket
         {
@@ -153,29 +157,22 @@ public class Room
 
     public void Update()
     {
-        if (State != RoomState.Playing
-            || _gameState == null
-            || _gameState.IsGameEnd)
+        if (State != RoomState.Playing)
             return;
 
-        Tick();
+
+        if (_simulation == null)
+            return;
+
+
+        if (_simulation.IsGameEnd)
+            return;
+
+
+        _simulation.Update(0.05f);
+
+
         Sync();
-    }
-
-    private void Tick()
-    {
-        if (_gameState == null)
-            return;
-
-        _gameState.UpdateTick(0.05f);
-
-        ProcessInput();
-
-        UpdatePlayers();
-
-        UpdateBlocks();
-
-        CheckCollision();
     }
 
     private void Sync()
@@ -188,56 +185,9 @@ public class Room
 
     public void EnqueueInput(Player player, InputType type)
     {
-        _inputQueue.Enqueue(
-            new PlayerInputCommand(player, type));
+        _simulation?.EnqueueInput(
+            new PlayerInputCommand(player, type)
+        );
     }
 
-    private void ProcessInput()
-    {
-        while (_inputQueue.TryDequeue(out var input))
-        {
-            switch (input.Type)
-            {
-                case InputType.MoveLeft:
-                    input.Player.MoveLeft();
-                    break;
-
-                case InputType.MoveRight:
-                    input.Player.MoveRight();
-                    break;
-
-                case InputType.ChangeMode:
-                    input.Player.ChangeMode();
-                    break;
-
-                case InputType.Shoot:
-                    //input.Player.DropBlock();
-                    break;
-
-                case InputType.Rotate:
-                    input.Player.RotatePiece();
-                    break;
-            }
-        }
-    }
-
-    private void UpdatePlayers()
-    {
-        const float deltaTime = 0.05f;
-
-
-        foreach (Player player in _players)
-        {
-            player.Car.Update(deltaTime);
-        }
-    }
-
-    private void UpdateBlocks()
-    {
-
-    }
-
-    private void CheckCollision()
-    {
-    }
 }

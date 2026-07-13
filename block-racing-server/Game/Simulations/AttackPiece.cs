@@ -10,9 +10,11 @@ public class AttackPiece
 {
     public BlockPiece Piece { get; }
 
-    public int SpawnTick { get; }
 
-    public AttackPiece(BlockPiece piece, int spawnTick)
+    public long SpawnTick { get; }
+
+
+    public AttackPiece(BlockPiece piece, long spawnTick)
     {
         Piece = piece;
         SpawnTick = spawnTick;

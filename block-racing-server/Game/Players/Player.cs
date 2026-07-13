@@ -28,8 +28,6 @@ public class Player
 
     public PlayMode Mode { get; private set; }
 
-   
-
     public Player(PlayerSession session, int id, string nickname)
     {
         Session = session;
@@ -62,5 +60,19 @@ public class Player
             Mode == PlayMode.Attack
             ? PlayMode.Defense
             : PlayMode.Attack;
+    }
+
+    public void SetCurrentPiece(BlockPiece piece)
+    {
+        CurrentPiece = piece;
+    }
+
+    public BlockPiece? TakePiece()
+    {
+        BlockPiece? piece = CurrentPiece;
+
+        CurrentPiece = null;
+
+        return piece;
     }
 }
