@@ -8,6 +8,9 @@ namespace block_racing_server.Game.Simulations.Lanes;
 
 public class Car
 {
+    public const int Width = 2;
+    public const int Height = 1;
+
     public int X { get; private set; } = 2;
 
     public float Speed { get; private set; }
@@ -20,6 +23,13 @@ public class Car
 
     public int StunRemainTick { get; private set; }
 
+    private const float Penalty = 1.0f;
+
+    public Car(float speed)
+    {
+        Speed = speed;
+    }
+
 
     public void MoveLeft()
     {
@@ -29,7 +39,7 @@ public class Car
 
     public void MoveRight()
     {
-        if (X < Lane.Width - 1)
+        if (X + Width < Lane.Width)
             X++;
     }
 
@@ -37,11 +47,45 @@ public class Car
     {
         if (IsStunned)
         {
+            StunRemainTick--;
+
             Distance += Speed * 0.2f * deltaTime;
+
+            if (StunRemainTick <= 0)
+            {
+                IsStunned = false;
+                IsInvincible = false;
+
+                Speed -= Penalty;
+
+                if (Speed < 1f)
+                    Speed = 1f;
+            }
         }
         else
         {
             Distance += Speed * deltaTime;
         }
+    }
+
+    public void OnCollision()
+    {
+        if (IsInvincible)
+            return;
+
+        IsStunned = true;
+        IsInvincible = true;
+
+        StunRemainTick = 40;
+    }
+
+    public void AddSpeed(float value)
+    {
+        Speed += value;
+    }
+
+    public void SetSpeed(float speed)
+    {
+        Speed = speed;
     }
 }

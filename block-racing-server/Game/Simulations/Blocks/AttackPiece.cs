@@ -10,13 +10,18 @@ public class AttackPiece
 {
     public BlockPiece Piece { get; }
 
+    public int SpawnX { get; }
 
     public long SpawnTick { get; }
 
+    public int OwnerId { get; }
 
-    public AttackPiece(BlockPiece piece, long spawnTick)
+
+    public AttackPiece(BlockPiece piece, int spawnX, long spawnTick, int ownerId)
     {
         Piece = piece;
+        SpawnX = spawnX;
         SpawnTick = spawnTick;
+        OwnerId = ownerId;
     }
 }

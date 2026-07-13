@@ -10,21 +10,19 @@ using block_racing_server.Game.Simulations.Lanes;
 
 public class LaneScrollSystem
 {
-    private float _timer;
-
     public float ScrollInterval { get; set; } = 0.5f;
 
 
     public void Update(Lane lane, float deltaTime)
     {
-        _timer += deltaTime;
+        lane.ScrollTimer += deltaTime;
 
-        if (_timer < ScrollInterval)
+        if (lane.ScrollTimer < ScrollInterval)
             return;
 
-        _timer = 0;
-
         Scroll(lane);
+
+        lane.ScrollTimer = 0;
     }
 
 

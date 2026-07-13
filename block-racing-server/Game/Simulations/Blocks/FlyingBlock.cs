@@ -14,6 +14,8 @@ public class FlyingBlock
 
     public float Y { get; private set; }
 
+    public int GridY => (int)Math.Floor(Y);
+
 
     public float MoveSpeed { get; }
 

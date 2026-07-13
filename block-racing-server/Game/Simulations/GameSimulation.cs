@@ -16,6 +16,8 @@ public class GameSimulation
 
     private readonly LineClearSystem _lineClearSystem = new();
     private readonly LaneScrollSystem _laneScrollSystem = new();
+    private readonly AttackSystem _attackSystem = new();
+    private readonly CollisionSystem _collisionSystem = new();
 
 
     public GameSimulation(GameState gameState)
@@ -41,11 +43,15 @@ public class GameSimulation
 
         UpdatePlayers(deltaTime);
 
+        _attackSystem.Update(_gameState);
+
         UpdateBlockSystem(deltaTime);
+
+        UpdateLineClear();
 
         UpdateLaneScroll(deltaTime);
 
-        CheckCollision();
+        _collisionSystem.Update(Players);
 
         _gameState.UpdateTick(deltaTime);
     }
@@ -104,8 +110,6 @@ public class GameSimulation
                 {
                     lane.SettleBlock(block);
 
-                    _lineClearSystem.ClearLines(lane);
-
                     block.Finish();
                 }
             }
@@ -126,10 +130,13 @@ public class GameSimulation
         }
     }
 
-    private void CheckCollision()
+    private void UpdateLineClear()
     {
+        foreach (Player player in Players.Values)
+        {
+            _lineClearSystem.ClearLines(player.Lane);
+        }
     }
-
 
     private void Shoot(Player player)
     {
@@ -165,7 +172,9 @@ public class GameSimulation
         target.Lane.PendingAttacks.Enqueue(
             new AttackPiece(
                 piece,
-                _gameState!.Tick + 30
+                sender.Car.X,
+                _gameState!.Tick + 30,
+                sender.Id
             )
         );
     }
@@ -203,24 +212,4 @@ public class GameSimulation
         return false;
     }
 
-    private void SettleBlock(Lane lane, FlyingBlock block)
-    {
-        foreach (var cell in block.Piece.Cells)
-        {
-            int x = block.X + cell.X;
-
-            int y = (int)MathF.Floor(block.Y) + cell.Y;
-
-
-            if (y < 0)
-                continue;
-
-
-            lane.Grid[y, x].Block =
-                new Block(
-                    BlockType.Normal,
-                    block.OwnerId
-                );
-        }
-    }
 }

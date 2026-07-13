@@ -23,9 +23,24 @@ public class BlockPiece
         Type = type;
         Rotation = Rotation.Up;
 
-        Cells = PieceShapeTable.GetShape(type, Rotation);
+        Cells = PieceShapeTable.GetShape(type, Rotation).ToArray();
     }
 
+    public int Width
+    {
+        get
+        {
+            return Cells.Max(cell => cell.X) + 1;
+        }
+    }
+
+    public int Height
+    {
+        get
+        {
+            return Cells.Max(cell => cell.Y) + 1;
+        }
+    }
 
     public void Rotate()
     {

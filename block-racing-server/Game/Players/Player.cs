@@ -36,7 +36,7 @@ public class Player
         NickName = nickname;
 
         Lane = new Lane();
-        Car = new Car();
+        Car = new Car(1);
     }
 
 

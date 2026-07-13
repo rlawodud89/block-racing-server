@@ -20,6 +20,8 @@ public class Lane
 
     public List<FlyingBlock> FlyingBlocks { get; }
 
+    public float ScrollTimer { get; set; }
+
 
     public Lane()
     {
@@ -45,7 +47,40 @@ public class Lane
         return grid;
     }
 
-    public void RemoveLine(int removeY)
+    public bool HasBlock(int x, int y)
+    {
+        if (x < 0 || x >= Width)
+            return false;
+
+        if (y < 0 || y >= Height)
+            return false;
+
+        return Grid[y, x].Block != null;
+    }
+
+    public void PlaceBlock(int x, int y, Block block)
+    {
+        if (x < 0 || x >= Width)
+            return;
+
+        if (y < 0 || y >= Height)
+            return;
+
+        Grid[y, x].Block = block;
+    }
+
+    public void RemoveBlock(int x, int y)
+    {
+        if (x < 0 || x >= Width)
+            return;
+
+        if (y < 0 || y >= Height)
+            return;
+
+        Grid[y, x].Block = null;
+    }
+
+    public void ClearLine(int removeY)
     {
         for (int x = 0; x < Width; x++)
         {
@@ -53,27 +88,34 @@ public class Lane
         }
     }
 
+
     public void SettleBlock(FlyingBlock block)
     {
         foreach (var cell in block.Piece.Cells)
         {
-            int x = block.X + cell.X;
-            int y = block.Y + cell.Y;
-
-
-            if (x < 0 || x >= Width)
-                continue;
-
-
-            if (y < 0 || y >= Height)
-                continue;
-
-
-            Grid[y, x].Block =
+            PlaceBlock(
+                block.X + cell.X,
+                block.GridY + cell.Y,
                 new Block(
                     BlockType.Normal,
-                    block.OwnerId
-                );
+                    block.OwnerId));
+        }
+    }
+
+
+    public void SpawnAttack(AttackPiece attack)
+    {
+        foreach (var cell in attack.Piece.Cells)
+        {
+            int x = attack.SpawnX + cell.X;
+            int y = Height - 1 - attack.Piece.Height;
+
+            PlaceBlock(
+                x,
+                y,
+                new Block(
+                    BlockType.Normal,
+                    attack.OwnerId));
         }
     }
 }
