@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace block_racing_server.Game.Simulations;
+namespace block_racing_server.Game.Simulations.Lanes;
 
 public class Car
 {

@@ -1,11 +1,12 @@
-﻿using System;
+﻿using block_racing_server.Game.Simulations.Lanes;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace block_racing_server.Game.Simulations;
+namespace block_racing_server.Game.Simulations.Blocks;
 
 public class BlockPiece
 {

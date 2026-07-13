@@ -1,10 +1,8 @@
 ﻿using block_racing_server.Game.Players;
-using System;
+using block_racing_server.Game.Rules;
+using block_racing_server.Game.Simulations.Blocks;
+using block_racing_server.Game.Simulations.Lanes;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace block_racing_server.Game.Simulations;
 
@@ -16,14 +14,17 @@ public class GameSimulation
     private readonly ConcurrentQueue<PlayerInputCommand> _inputQueue
         = new();
 
-    private IReadOnlyDictionary<int, Player> Players
-        => _gameState.Players;
+    private readonly LineClearSystem _lineClearSystem = new();
+    private readonly LaneScrollSystem _laneScrollSystem = new();
+
 
     public GameSimulation(GameState gameState)
     {
         _gameState = gameState;
     }
 
+    private IReadOnlyDictionary<int, Player> Players
+        => _gameState.Players;
 
     public bool IsGameEnd
         => _gameState.IsGameEnd;
@@ -40,7 +41,9 @@ public class GameSimulation
 
         UpdatePlayers(deltaTime);
 
-        UpdateBlockSystem();
+        UpdateBlockSystem(deltaTime);
+
+        UpdateLaneScroll(deltaTime);
 
         CheckCollision();
 
@@ -85,7 +88,7 @@ public class GameSimulation
         }
     }
 
-    private void UpdateBlockSystem()
+    private void UpdateBlockSystem(float deltaTime)
     {
         foreach (Player player in Players.Values)
         {
@@ -94,12 +97,14 @@ public class GameSimulation
 
             foreach (FlyingBlock block in lane.FlyingBlocks)
             {
-                block.MoveDown();
+                block.MoveDown(deltaTime);
 
 
                 if (CheckBlockCollision(lane, block))
                 {
-                    SettleBlock(lane, block);
+                    lane.SettleBlock(block);
+
+                    _lineClearSystem.ClearLines(lane);
 
                     block.Finish();
                 }
@@ -108,6 +113,16 @@ public class GameSimulation
             lane.FlyingBlocks.RemoveAll(
                 b => b.IsFinished
             );
+        }
+    }
+
+    private void UpdateLaneScroll(float deltaTime)
+    {
+        foreach (Player player in Players.Values)
+        {
+            _laneScrollSystem.Update(
+                player.Lane,
+                deltaTime);
         }
     }
 
@@ -173,7 +188,7 @@ public class GameSimulation
         foreach (var cell in block.Piece.Cells)
         {
             int x = block.X + cell.X;
-            int y = block.Y + cell.Y;
+            int y = (int)MathF.Floor(block.Y) + cell.Y;
 
 
             if (y >= Lane.Height)
@@ -194,7 +209,7 @@ public class GameSimulation
         {
             int x = block.X + cell.X;
 
-            int y = block.Y + cell.Y;
+            int y = (int)MathF.Floor(block.Y) + cell.Y;
 
 
             if (y < 0)

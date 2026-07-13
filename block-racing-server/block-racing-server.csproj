@@ -11,10 +11,7 @@
   <ItemGroup>
     <Folder Include="Core\" />
     <Folder Include="Database\" />
-    <Folder Include="Game\Fields\" />
-    <Folder Include="Game\Blocks\" />
-    <Folder Include="Game\Collisions\" />
-    <Folder Include="Game\Tick\" />
+    <Folder Include="Game\Rules\" />
   </ItemGroup>
 
 </Project>
