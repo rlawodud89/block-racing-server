@@ -1,0 +1,20 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace block_racing_server.Game.Simulations;
+
+public class AttackPiece
+{
+    public BlockPiece Piece { get; }
+
+    public int SpawnTick { get; }
+
+    public AttackPiece(BlockPiece piece, int spawnTick)
+    {
+        Piece = piece;
+        SpawnTick = spawnTick;
+    }
+}

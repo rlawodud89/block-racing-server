@@ -1,5 +1,6 @@
 ﻿using block_racing_server.Game.Matchs;
 using block_racing_server.Game.Rooms;
+using block_racing_server.Game.Simulations;
 using block_racing_server.Network;
 
 namespace block_racing_server.Game.Players;
@@ -14,9 +15,11 @@ public class Player
 
     public PlayerInput Input { get; } = new PlayerInput();
 
-    public int Lane { get; set; }
+    public Car Car { get; }
 
-    public bool IsStunned { get; set; }
+    public BlockPiece CurrentPiece { get; set; }
+
+    public bool AttackMode { get; set; }
 
     public PlayerSession Session { get; }
 
