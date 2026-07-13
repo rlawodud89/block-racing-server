@@ -13,22 +13,54 @@ public class Player
 
     public MatchState MatchState { get; set; } = MatchState.None;
 
+    public PlayerSession Session { get; }
+
+    public Room? Room { get; set; }
+
+
     public PlayerInput Input { get; } = new PlayerInput();
 
     public Car Car { get; }
 
-    public BlockPiece CurrentPiece { get; set; }
+    public BlockPiece? CurrentPiece { get; set; }
 
-    public bool AttackMode { get; set; }
+    public Lane Lane { get; }
 
-    public PlayerSession Session { get; }
+    public PlayMode Mode { get; private set; }
 
-    public Room? Room { get; set; }
+   
 
     public Player(PlayerSession session, int id, string nickname)
     {
         Session = session;
         Id = id;
         NickName = nickname;
+
+        Lane = new Lane();
+        Car = new Car();
+    }
+
+
+    public void MoveLeft()
+    {
+        Car.MoveLeft();
+    }
+
+    public void MoveRight()
+    {
+        Car.MoveRight();
+    }
+
+    public void RotatePiece()
+    {
+        CurrentPiece?.Rotate();
+    }
+
+    public void ChangeMode()
+    {
+        Mode =
+            Mode == PlayMode.Attack
+            ? PlayMode.Defense
+            : PlayMode.Attack;
     }
 }

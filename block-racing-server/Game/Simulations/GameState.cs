@@ -1,4 +1,5 @@
-﻿using System;
+﻿using block_racing_server.Game.Players;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,9 +9,40 @@ namespace block_racing_server.Game.Simulations;
 
 public class GameState
 {
-    public int Tick { get; set; }
+    public long Tick { get; private set; }
 
-    public bool IsGameEnd { get; set; }
+    public float ElapsedTime { get; private set; }
 
-    public Dictionary<int, Lane> Lanes { get; } = new();
+
+    public int TargetDistance { get; } = 500;
+
+
+    public bool IsGameEnd { get; private set; }
+
+
+    private readonly Dictionary<int, Player> _players = new();
+
+
+    public IReadOnlyDictionary<int, Player> Players
+        => _players;
+
+
+
+    public void AddPlayer(Player player)
+    {
+        _players.Add(player.Id, player);
+    }
+
+
+    public void UpdateTick(float deltaTime)
+    {
+        Tick++;
+        ElapsedTime += deltaTime;
+    }
+
+
+    public void EndGame()
+    {
+        IsGameEnd = true;
+    }
 }

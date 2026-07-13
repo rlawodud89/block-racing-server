@@ -8,13 +8,40 @@ namespace block_racing_server.Game.Simulations;
 
 public class Car
 {
-    public int X { get; set; } = 2;
+    public int X { get; private set; } = 2;
 
-    public float Speed { get; set; }
+    public float Speed { get; private set; }
 
-    public float Distance { get; set; }
+    public float Distance { get; private set; }
 
-    public bool IsInvincible { get; set; }
+    public bool IsStunned { get; private set; }
 
-    public int StunRemainTick { get; set; }
+    public bool IsInvincible { get; private set; }
+
+    public int StunRemainTick { get; private set; }
+
+
+    public void MoveLeft()
+    {
+        if (X > 0)
+            X--;
+    }
+
+    public void MoveRight()
+    {
+        if (X < Lane.Width - 1)
+            X++;
+    }
+
+    public void Update(float deltaTime)
+    {
+        if (IsStunned)
+        {
+            Distance += Speed * 0.2f * deltaTime;
+        }
+        else
+        {
+            Distance += Speed * deltaTime;
+        }
+    }
 }

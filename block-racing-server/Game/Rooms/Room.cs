@@ -2,6 +2,7 @@
 using block_racing_server.Game.Players;
 using block_racing_server.Network;
 using block_racing_server.Network.Packets;
+using block_racing_server.Game.Simulations;
 using System.Collections.Concurrent;
 using System.Net.Sockets;
 
@@ -22,6 +23,8 @@ public class Room
     private long _tickCount = 0;
 
     private readonly ConcurrentQueue<PlayerInputCommand> _inputQueue = new();
+
+    public GameState? _gameState { get; private set; }
 
 
     public Room(int id)
@@ -124,6 +127,13 @@ public class Room
     {
         Console.WriteLine($"Room {Id} START GAME SYNC");
 
+        _gameState = new GameState();
+
+        foreach (Player player in _players)
+        {
+            _gameState.AddPlayer(player);
+        }
+
         var packet = new S_StartGamePacket
         {
             RoomId = Id
@@ -143,7 +153,9 @@ public class Room
 
     public void Update()
     {
-        if (State != RoomState.Playing)
+        if (State != RoomState.Playing
+            || _gameState == null
+            || _gameState.IsGameEnd)
             return;
 
         Tick();
@@ -152,7 +164,10 @@ public class Room
 
     private void Tick()
     {
-        _tickCount++;
+        if (_gameState == null)
+            return;
+
+        _gameState.UpdateTick(0.05f);
 
         ProcessInput();
 
@@ -183,24 +198,24 @@ public class Room
         {
             switch (input.Type)
             {
-                case InputType.Left:
-                    //input.Player.MoveLeft();
+                case InputType.MoveLeft:
+                    input.Player.MoveLeft();
                     break;
 
-                case InputType.Right:
-                    //input.Player.MoveRight();
+                case InputType.MoveRight:
+                    input.Player.MoveRight();
                     break;
 
-                case InputType.Mode:
-                    //input.Player.ChangeMode();
+                case InputType.ChangeMode:
+                    input.Player.ChangeMode();
                     break;
 
-                case InputType.Drop:
+                case InputType.Shoot:
                     //input.Player.DropBlock();
                     break;
 
                 case InputType.Rotate:
-                    //input.Player.RotateBlock();
+                    input.Player.RotatePiece();
                     break;
             }
         }
@@ -208,7 +223,13 @@ public class Room
 
     private void UpdatePlayers()
     {
+        const float deltaTime = 0.05f;
 
+
+        foreach (Player player in _players)
+        {
+            player.Car.Update(deltaTime);
+        }
     }
 
     private void UpdateBlocks()
