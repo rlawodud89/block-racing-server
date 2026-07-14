@@ -21,6 +21,7 @@ public class GameSimulation
     private readonly LaneScrollSystem _laneScrollSystem = new();
     private readonly AttackSystem _attackSystem = new();
     private readonly CollisionSystem _collisionSystem = new();
+    private readonly GameEndSystem _gameEndSystem = new();
 
 
     public GameSimulation(GameState gameState)
@@ -53,7 +54,7 @@ public class GameSimulation
         _inputQueue.Enqueue(command);
     }
 
-    public void Update(float deltaTime)
+    public GameEndResult? Update(float deltaTime)
     {
         ProcessInput();
 
@@ -70,6 +71,17 @@ public class GameSimulation
         _collisionSystem.Update(Players);
 
         _gameState.UpdateTick(deltaTime);
+
+        GameEndResult result =
+        _gameEndSystem.Update(_gameState);
+
+        if (result.IsGameEnd)
+        {
+            _gameState.EndGame();
+            return result;
+        }
+
+        return null;
     }
 
 
@@ -164,7 +176,6 @@ public class GameSimulation
 
     private void Shoot(Player player)
     {
-
         BlockPiece? piece = player.TakePiece();
 
         if (piece == null)
@@ -179,7 +190,6 @@ public class GameSimulation
         {
             SpawnFlyingBlock(player, piece);
         }
-
     }
 
     private void SendAttack(Player sender, BlockPiece piece)
@@ -228,7 +238,6 @@ public class GameSimulation
             if (lane.Grid[y, x].Block != null)
                 return true;
         }
-
 
         return false;
     }

@@ -1,8 +1,9 @@
 ﻿using block_racing_server.Game.Matchs;
 using block_racing_server.Game.Players;
+using block_racing_server.Game.Rules;
+using block_racing_server.Game.Simulations;
 using block_racing_server.Network;
 using block_racing_server.Network.Packets;
-using block_racing_server.Game.Simulations;
 using System.Collections.Concurrent;
 using System.Net.Sockets;
 
@@ -164,8 +165,13 @@ public class Room
             return;
 
 
-        _simulation.Update(0.05f);
+        GameEndResult? result = _simulation.Update(0.05f);
 
+        if (result != null)
+        {
+            // GameEndPacket 전송
+            // Room 종료
+        }
 
         Sync();
     }
