@@ -25,6 +25,11 @@ public class Player
 
     public BlockPiece? CurrentPiece { get; set; }
 
+    public float PieceCooldown { get; private set; }
+
+    private const float PieceCooldownTime = 1.5f;
+
+
     public Lane Lane { get; }
 
     public PlayMode Mode { get; private set; }
@@ -38,6 +43,17 @@ public class Player
         Lane = new Lane();
         Car = new Car(1);
     }
+
+    public void Update(float deltaTime)
+    {
+        if (CurrentPiece != null)
+            return;
+
+        PieceCooldown -= deltaTime;
+    }
+
+    public bool CanCreatePiece =>
+        CurrentPiece == null && PieceCooldown <= 0;
 
 
     public void MoveLeft()
@@ -73,6 +89,8 @@ public class Player
         BlockPiece? piece = CurrentPiece;
 
         CurrentPiece = null;
+
+        PieceCooldown = PieceCooldownTime;
 
         return piece;
     }

@@ -123,20 +123,15 @@ public class Room
     {
         Console.WriteLine($"Room {Id} START GAME SYNC");
 
-        GameState state = new();
-
+        GameState gameState = new();
 
         foreach (Player player in _players)
         {
-            state.AddPlayer(player);
-
-            player.SetCurrentPiece(
-                state.CreatePiece()
-            );
+            gameState.AddPlayer(player);
         }
 
-        _simulation = new GameSimulation(state);
-
+        _simulation = new GameSimulation(gameState);
+        _simulation.Initialize();
 
         var packet = new S_StartGamePacket
         {

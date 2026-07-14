@@ -14,6 +14,9 @@ public class GameSimulation
     private readonly ConcurrentQueue<PlayerInputCommand> _inputQueue
         = new();
 
+
+    private readonly PieceGenerator _pieceGenerator = new();
+
     private readonly LineClearSystem _lineClearSystem = new();
     private readonly LaneScrollSystem _laneScrollSystem = new();
     private readonly AttackSystem _attackSystem = new();
@@ -23,6 +26,19 @@ public class GameSimulation
     public GameSimulation(GameState gameState)
     {
         _gameState = gameState;
+    }
+
+    public void Initialize()
+    {
+        foreach (Player player in Players.Values)
+        {
+            player.SetCurrentPiece(_pieceGenerator.Create());
+
+            // 앞으로 추가될 초기화들도 여기서
+            // player.Car.SetSpeed(...)
+            // player.Mode = PlayMode.Defense;
+            // player.ResetCooldown();
+        }
     }
 
     private IReadOnlyDictionary<int, Player> Players
@@ -91,6 +107,14 @@ public class GameSimulation
         foreach (Player player in Players.Values)
         {
             player.Car.Update(deltaTime);
+
+            player.Update(deltaTime);
+
+            if (player.CanCreatePiece)
+            {
+                player.SetCurrentPiece(
+                    _pieceGenerator.Create());
+            }
         }
     }
 
@@ -156,9 +180,6 @@ public class GameSimulation
             SpawnFlyingBlock(player, piece);
         }
 
-
-        // 다음 블록 생성
-        player.SetCurrentPiece(_gameState.CreatePiece());
     }
 
     private void SendAttack(Player sender, BlockPiece piece)

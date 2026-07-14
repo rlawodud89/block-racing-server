@@ -18,9 +18,6 @@ public class GameState
 
     public bool IsGameEnd { get; private set; }
 
-
-    private readonly PieceGenerator _pieceGenerator = new();
-
     private readonly Dictionary<int, Player> _players = new();
 
 
@@ -46,8 +43,4 @@ public class GameState
         IsGameEnd = true;
     }
 
-    public BlockPiece CreatePiece()
-    {
-        return _pieceGenerator.Create();
-    }
 }
