@@ -2,6 +2,7 @@
 using block_racing_server.Game.Players;
 using block_racing_server.Game.Rules;
 using block_racing_server.Game.Simulations;
+using block_racing_server.Game.Simulations.Snapshots;
 using block_racing_server.Network;
 using block_racing_server.Network.Packets;
 using System.Collections.Concurrent;
@@ -151,7 +152,7 @@ public class Room
         State = RoomState.Playing;
     }
 
-    public void Update()
+    public async Task Update()
     {
         if (State != RoomState.Playing)
             return;
@@ -171,16 +172,36 @@ public class Room
         {
             // GameEndPacket 전송
             // Room 종료
+
+            State = RoomState.Ended;
+
+            return;
         }
 
-        Sync();
+        await Sync();
     }
 
-    private void Sync()
+    private async Task Sync()
     {
-        foreach (var p in _players)
+        if (_simulation == null)
+            return;
+
+        GameStateSnapshot snapshot =
+            _simulation.CreateSnapshot();
+
+
+        S_GameStatePacket packet = new(snapshot);
+
+        PacketWriter writer = new((ushort)packet.PacketId);
+
+        packet.Write(writer);
+
+        byte[] bytes = writer.ToArray();
+
+
+        foreach (Player player in _players)
         {
-            // 상태 데이터 패킷 전송
+            await player.Session.SendAsync(bytes);
         }
     }
 

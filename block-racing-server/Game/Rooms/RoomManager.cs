@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +9,7 @@ namespace block_racing_server.Game.Rooms;
 
 public class RoomManager
 {
-    private readonly Dictionary<int, Room> _rooms = new();
+    private readonly ConcurrentDictionary<int, Room> _rooms = new();
 
     private int _roomId = 0;
 
@@ -18,7 +19,7 @@ public class RoomManager
 
         var room = new Room(id);
 
-        _rooms.Add(id, room);
+        _rooms.TryAdd(id, room);
 
         Console.WriteLine($"Room {id} created.");
 
@@ -27,7 +28,7 @@ public class RoomManager
 
     public bool RemoveRoom(int id)
     {
-        return _rooms.Remove(id);
+        return _rooms.TryRemove(id, out _);
     }
 
     public Room? Find(int id)

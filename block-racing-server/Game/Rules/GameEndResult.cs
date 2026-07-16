@@ -9,15 +9,12 @@ namespace block_racing_server.Game.Rules;
 
 public class GameEndResult
 {
-    public bool IsGameEnd { get; }
-
     public Player? Winner { get; }
 
     public Player? Loser { get; }
 
-    public GameEndResult(bool isGameEnd, Player? winner, Player? loser)
+    public GameEndResult(Player? winner, Player? loser)
     {
-        IsGameEnd = isGameEnd;
         Winner = winner;
         Loser = loser;
     }

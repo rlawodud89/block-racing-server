@@ -2,6 +2,7 @@
 using block_racing_server.Game.Rules;
 using block_racing_server.Game.Simulations.Blocks;
 using block_racing_server.Game.Simulations.Lanes;
+using block_racing_server.Game.Simulations.Snapshots;
 using System.Collections.Concurrent;
 
 namespace block_racing_server.Game.Simulations;
@@ -48,6 +49,10 @@ public class GameSimulation
     public bool IsGameEnd
         => _gameState.IsGameEnd;
 
+    public GameStateSnapshot CreateSnapshot()
+    {
+        return new GameStateSnapshot(_gameState);
+    }
 
     public void EnqueueInput(PlayerInputCommand command)
     {
@@ -72,16 +77,13 @@ public class GameSimulation
 
         _gameState.UpdateTick(deltaTime);
 
-        GameEndResult result =
-        _gameEndSystem.Update(_gameState);
+        GameEndResult? result = _gameEndSystem.Update(_gameState);
 
-        if (result.IsGameEnd)
-        {
-            _gameState.EndGame();
-            return result;
-        }
+        if (result == null)
+            return null;
 
-        return null;
+        _gameState.EndGame();
+        return result;
     }
 
 

@@ -27,6 +27,14 @@ public class PacketReader
         return value;
     }
 
+    public byte ReadByte()
+    {
+        EnsureSize(sizeof(byte));
+        byte value = _buffer[_pos];
+        _pos += sizeof(byte);
+        return value;
+    }
+
     public ushort ReadUInt16()
     {
         EnsureSize(sizeof(ushort));
@@ -42,6 +50,22 @@ public class PacketReader
 
         int value = BitConverter.ToInt32(_buffer, _pos);
         _pos += sizeof(int);
+        return value;
+    }
+
+    public long ReadLong()
+    {
+        EnsureSize(sizeof(long));
+        long value = BitConverter.ToInt64(_buffer, _pos);
+        _pos += sizeof(long);
+        return value;
+    }
+
+    public float ReadFloat()
+    {
+        EnsureSize(sizeof(float));
+        float value = BitConverter.ToSingle(_buffer, _pos);
+        _pos += sizeof(float);
         return value;
     }
 

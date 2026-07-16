@@ -16,15 +16,11 @@ public class GameEndSystem
                                 .First(p => p.Id != player.Id);
 
                 return new GameEndResult(
-                    true,
                     player,
                     loser);
             }
         }
 
-        return new GameEndResult(
-            false,
-            null,
-            null);
+        return null;
     }
 }
