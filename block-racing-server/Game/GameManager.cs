@@ -19,10 +19,10 @@ public class GameManager
     {
         await _matchMaker.TryMatch();
 
-        foreach (var room in _roomManager.Rooms)
-        {
-            room.Update();
-        }
+        await Task.WhenAll(
+            _roomManager.Rooms
+            .Select(room => room.Update())
+        );
     }
 
     public void RegisterPlayer(Player player)

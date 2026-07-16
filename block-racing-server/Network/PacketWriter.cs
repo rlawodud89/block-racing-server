@@ -21,12 +21,27 @@ public class PacketWriter
         _buffer.AddRange(BitConverter.GetBytes(value));
     }
 
+    public void Write(byte value)
+    {
+        _buffer.Add(value);
+    }
+
+    public void Write(ushort value)
+    {
+        _buffer.AddRange(BitConverter.GetBytes(value));
+    }
+
     public void Write(int value)
     {
         _buffer.AddRange(BitConverter.GetBytes(value));
     }
 
-    public void Write(ushort value)
+    public void Write(long value)
+    {
+        _buffer.AddRange(BitConverter.GetBytes(value));
+    }
+
+    public void Write(float value)
     {
         _buffer.AddRange(BitConverter.GetBytes(value));
     }

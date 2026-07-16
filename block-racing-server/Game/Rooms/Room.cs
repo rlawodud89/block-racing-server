@@ -1,7 +1,11 @@
 ﻿using block_racing_server.Game.Matchs;
 using block_racing_server.Game.Players;
+using block_racing_server.Game.Rules;
+using block_racing_server.Game.Simulations;
+using block_racing_server.Game.Simulations.Snapshots;
 using block_racing_server.Network;
 using block_racing_server.Network.Packets;
+using System.Collections.Concurrent;
 using System.Net.Sockets;
 
 namespace block_racing_server.Game.Rooms;
@@ -17,6 +21,8 @@ public class Room
     private readonly Dictionary<int, bool> _readyMap = new();
 
     private readonly object _lock = new();
+
+    private GameSimulation? _simulation;
 
 
     public Room(int id)
@@ -117,9 +123,17 @@ public class Room
 
     private async Task StartGameSync()
     {
-        State = RoomState.Starting;
-
         Console.WriteLine($"Room {Id} START GAME SYNC");
+
+        GameState gameState = new();
+
+        foreach (Player player in _players)
+        {
+            gameState.AddPlayer(player);
+        }
+
+        _simulation = new GameSimulation(gameState);
+        _simulation.Initialize();
 
         var packet = new S_StartGamePacket
         {
@@ -138,25 +152,64 @@ public class Room
         State = RoomState.Playing;
     }
 
-    public void Update()
+    public async Task Update()
     {
         if (State != RoomState.Playing)
             return;
 
-        Tick();
-        Sync();
-    }
 
-    private void Tick()
-    {
-        // 블록 이동, 충돌 등
-    }
+        if (_simulation == null)
+            return;
 
-    private void Sync()
-    {
-        foreach (var p in _players)
+
+        if (_simulation.IsGameEnd)
+            return;
+
+
+        GameEndResult? result = _simulation.Update(0.05f);
+
+        if (result != null)
         {
-            // 상태 데이터 패킷 전송
+            // GameEndPacket 전송
+            // Room 종료
+
+            State = RoomState.Ended;
+
+            return;
+        }
+
+        await Sync();
+    }
+
+    private async Task Sync()
+    {
+        if (_simulation == null)
+            return;
+
+        GameStateSnapshot snapshot =
+            _simulation.CreateSnapshot();
+
+
+        S_GameStatePacket packet = new(snapshot);
+
+        PacketWriter writer = new((ushort)packet.PacketId);
+
+        packet.Write(writer);
+
+        byte[] bytes = writer.ToArray();
+
+
+        foreach (Player player in _players)
+        {
+            await player.Session.SendAsync(bytes);
         }
     }
+
+    public void EnqueueInput(Player player, InputType type)
+    {
+        _simulation?.EnqueueInput(
+            new PlayerInputCommand(player, type)
+        );
+    }
+
 }

@@ -18,6 +18,7 @@ public class PacketManager
         Register<C_LoginPacket>(PacketId.C_Login, CLoginHandler.Handle);
         Register<C_MatchRequestPacket>(PacketId.C_MatchRequest, C_MatchRequestHandler.Handle);
         Register<C_ReadyPacket>(PacketId.C_Ready, C_ReadyHandler.Handle);
+        Register<C_InputPacket>(PacketId.C_Input, C_InputHandler.Handle);
     }
 
     public void Register<T>(
