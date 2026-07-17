@@ -1,7 +1,8 @@
 ﻿
-namespace block_racing_common.Game.Enums;
-
-public enum BlockType
+namespace block_racing_common.Game.Enums
 {
-    Normal
+    public enum BlockType
+    {
+        Normal
+    }
 }

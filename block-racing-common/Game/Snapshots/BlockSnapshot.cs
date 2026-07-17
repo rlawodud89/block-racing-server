@@ -1,20 +1,21 @@
 ﻿using block_racing_common.Game.Enums;
 
-namespace block_racing_common.Game.Snapshots;
-
-public class BlockSnapshot
+namespace block_racing_common.Game.Snapshots
 {
-    public int X { get; }
-
-    public int Y { get; }
-
-    public PieceType Type { get; }
-
-
-    public BlockSnapshot(int x, int y, PieceType type)
+    public class BlockSnapshot
     {
-        X = x;
-        Y = y;
-        Type = type;
+        public int X { get; }
+
+        public int Y { get; }
+
+        public PieceType Type { get; }
+
+
+        public BlockSnapshot(int x, int y, PieceType type)
+        {
+            X = x;
+            Y = y;
+            Type = type;
+        }
     }
 }

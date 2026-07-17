@@ -1,19 +1,20 @@
 ﻿
-namespace block_racing_common.Network.Packets;
-
-public class C_LoginPacket : IPacket
+namespace block_racing_common.Network.Packets
 {
-    public PacketId PacketId => PacketId.C_Login;
-
-    public string Nickname { get; set; } = string.Empty;
-
-    public void Read(PacketReader reader)
+    public class C_LoginPacket : IPacket
     {
-        Nickname = reader.ReadString();
-    }
+        public PacketId PacketId => PacketId.C_Login;
 
-    public void Write(PacketWriter writer)
-    {
-        writer.Write(Nickname);
+        public string Nickname { get; set; } = string.Empty;
+
+        public void Read(PacketReader reader)
+        {
+            Nickname = reader.ReadString();
+        }
+
+        public void Write(PacketWriter writer)
+        {
+            writer.Write(Nickname);
+        }
     }
 }

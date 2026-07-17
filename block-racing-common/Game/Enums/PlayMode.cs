@@ -1,8 +1,9 @@
 ﻿
-namespace block_racing_common.Game.Enums;
-
-public enum PlayMode
+namespace block_racing_common.Game.Enums
 {
-    Defense,
-    Attack
+    public enum PlayMode
+    {
+        Defense,
+        Attack
+    }
 }

@@ -1,16 +1,18 @@
-﻿
-namespace block_racing_common.Game.Snapshots;
+﻿using System.Collections.Generic;
 
-public class GameStateSnapshot
+namespace block_racing_common.Game.Snapshots
 {
-    public long Tick { get; }
-
-    public IReadOnlyList<PlayerSnapshot> Players { get; }
-
-
-    public GameStateSnapshot(long tick, IReadOnlyList<PlayerSnapshot> players)
+    public class GameStateSnapshot
     {
-        Tick = tick;
-        Players = players;
+        public long Tick { get; }
+
+        public IReadOnlyList<PlayerSnapshot> Players { get; }
+
+
+        public GameStateSnapshot(long tick, IReadOnlyList<PlayerSnapshot> players)
+        {
+            Tick = tick;
+            Players = players;
+        }
     }
 }

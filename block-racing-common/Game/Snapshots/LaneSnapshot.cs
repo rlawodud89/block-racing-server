@@ -1,18 +1,20 @@
-﻿
-namespace block_racing_common.Game.Snapshots;
+﻿using System.Collections.Generic;
 
-public class LaneSnapshot
+namespace block_racing_common.Game.Snapshots
 {
-    public byte[] Blocks { get; }
-
-    public IReadOnlyList<FlyingBlockSnapshot> FlyingBlocks { get; }
-
-
-    public LaneSnapshot(
-        byte[] blocks,
-        IReadOnlyList<FlyingBlockSnapshot> flyingBlocks)
+    public class LaneSnapshot
     {
-        Blocks = blocks;
-        FlyingBlocks = flyingBlocks;
+        public byte[] Blocks { get; }
+
+        public IReadOnlyList<FlyingBlockSnapshot> FlyingBlocks { get; }
+
+
+        public LaneSnapshot(
+            byte[] blocks,
+            IReadOnlyList<FlyingBlockSnapshot> flyingBlocks)
+        {
+            Blocks = blocks;
+            FlyingBlocks = flyingBlocks;
+        }
     }
 }

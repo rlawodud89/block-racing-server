@@ -1,10 +1,11 @@
 ﻿
-namespace block_racing_common.Network;
-
-public struct PacketHeader
+namespace block_racing_common.Network
 {
-    public ushort Length;
-    public ushort PacketId;
+    public struct PacketHeader
+    {
+        public ushort Length;
+        public ushort PacketId;
 
-    public const int Size = 4;
+        public const int Size = 4;
+    }
 }

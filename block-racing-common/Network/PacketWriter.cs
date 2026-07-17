@@ -1,67 +1,70 @@
-﻿using System.Text;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 
-namespace block_racing_common.Network;
-
-public class PacketWriter
+namespace block_racing_common.Network
 {
-    private readonly List<byte> _buffer = new();
-
-    public PacketWriter(ushort packetId)
+    public class PacketWriter
     {
-        // Length placeholder
-        _buffer.AddRange(new byte[2]);
+        private readonly List<byte> _buffer = new();
 
-        // PacketId
-        _buffer.AddRange(BitConverter.GetBytes(packetId));
-    }
+        public PacketWriter(ushort packetId)
+        {
+            // Length placeholder
+            _buffer.AddRange(new byte[2]);
 
-    public void Write(bool value)
-    {
-        _buffer.AddRange(BitConverter.GetBytes(value));
-    }
+            // PacketId
+            _buffer.AddRange(BitConverter.GetBytes(packetId));
+        }
 
-    public void Write(byte value)
-    {
-        _buffer.Add(value);
-    }
+        public void Write(bool value)
+        {
+            _buffer.AddRange(BitConverter.GetBytes(value));
+        }
 
-    public void Write(ushort value)
-    {
-        _buffer.AddRange(BitConverter.GetBytes(value));
-    }
+        public void Write(byte value)
+        {
+            _buffer.Add(value);
+        }
 
-    public void Write(int value)
-    {
-        _buffer.AddRange(BitConverter.GetBytes(value));
-    }
+        public void Write(ushort value)
+        {
+            _buffer.AddRange(BitConverter.GetBytes(value));
+        }
 
-    public void Write(long value)
-    {
-        _buffer.AddRange(BitConverter.GetBytes(value));
-    }
+        public void Write(int value)
+        {
+            _buffer.AddRange(BitConverter.GetBytes(value));
+        }
 
-    public void Write(float value)
-    {
-        _buffer.AddRange(BitConverter.GetBytes(value));
-    }
+        public void Write(long value)
+        {
+            _buffer.AddRange(BitConverter.GetBytes(value));
+        }
 
-    public void Write(string value)
-    {
-        byte[] bytes = Encoding.UTF8.GetBytes(value);
+        public void Write(float value)
+        {
+            _buffer.AddRange(BitConverter.GetBytes(value));
+        }
 
-        _buffer.AddRange(BitConverter.GetBytes((ushort)bytes.Length));
-        _buffer.AddRange(bytes);
-    }
+        public void Write(string value)
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(value);
 
-    public byte[] ToArray()
-    {
-        ushort length = (ushort)_buffer.Count;
+            _buffer.AddRange(BitConverter.GetBytes((ushort)bytes.Length));
+            _buffer.AddRange(bytes);
+        }
 
-        byte[] lengthBytes = BitConverter.GetBytes(length);
+        public byte[] ToArray()
+        {
+            ushort length = (ushort)_buffer.Count;
 
-        _buffer[0] = lengthBytes[0];
-        _buffer[1] = lengthBytes[1];
+            byte[] lengthBytes = BitConverter.GetBytes(length);
 
-        return _buffer.ToArray();
+            _buffer[0] = lengthBytes[0];
+            _buffer[1] = lengthBytes[1];
+
+            return _buffer.ToArray();
+        }
     }
 }

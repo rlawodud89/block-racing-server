@@ -1,15 +1,16 @@
 ﻿
-namespace block_racing_common.Game.Enums;
-
-public enum PieceType
+namespace block_racing_common.Game.Enums
 {
-    Single,
+    public enum PieceType
+    {
+        Single,
 
-    Line2,
+        Line2,
 
-    Line3,
+        Line3,
 
-    Square,
+        Square,
 
-    LShape,
+        LShape,
+    }
 }

@@ -1,11 +1,12 @@
 ﻿
-namespace block_racing_common.Game.Enums;
-
-public enum InputType
+namespace block_racing_common.Game.Enums
 {
-    MoveLeft,
-    MoveRight,
-    ChangeMode,
-    Shoot,
-    Rotate
+    public enum InputType
+    {
+        MoveLeft,
+        MoveRight,
+        ChangeMode,
+        Shoot,
+        Rotate
+    }
 }

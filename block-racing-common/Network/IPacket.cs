@@ -1,11 +1,12 @@
 ﻿
-namespace block_racing_common.Network;
-
-public interface IPacket
+namespace block_racing_common.Network
 {
-    PacketId PacketId { get; }
+    public interface IPacket
+    {
+        PacketId PacketId { get; }
 
-    void Read(PacketReader reader);
+        void Read(PacketReader reader);
 
-    void Write(PacketWriter writer);
+        void Write(PacketWriter writer);
+    }
 }

@@ -1,19 +1,20 @@
 ﻿
-namespace block_racing_common.Network.Packets;
-
-public class S_StartGamePacket : IPacket
+namespace block_racing_common.Network.Packets
 {
-    public PacketId PacketId => PacketId.S_StartGame;
-
-    public int RoomId { get; set; }
-
-    public void Read(PacketReader reader)
+    public class S_StartGamePacket : IPacket
     {
-        RoomId = reader.ReadInt32();
-    }
+        public PacketId PacketId => PacketId.S_StartGame;
 
-    public void Write(PacketWriter writer)
-    {
-        writer.Write(RoomId);
+        public int RoomId { get; set; }
+
+        public void Read(PacketReader reader)
+        {
+            RoomId = reader.ReadInt32();
+        }
+
+        public void Write(PacketWriter writer)
+        {
+            writer.Write(RoomId);
+        }
     }
 }

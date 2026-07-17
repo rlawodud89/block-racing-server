@@ -1,19 +1,20 @@
 ﻿
-namespace block_racing_common.Network.Packets;
-
-public class S_MatchFoundPacket : IPacket
+namespace block_racing_common.Network.Packets
 {
-    public PacketId PacketId => PacketId.S_MatchFound;
-
-    public int RoomId { get; set; }
-
-    public void Read(PacketReader reader)
+    public class S_MatchFoundPacket : IPacket
     {
-        RoomId = reader.ReadInt32();
-    }
+        public PacketId PacketId => PacketId.S_MatchFound;
 
-    public void Write(PacketWriter writer)
-    {
-        writer.Write(RoomId);
+        public int RoomId { get; set; }
+
+        public void Read(PacketReader reader)
+        {
+            RoomId = reader.ReadInt32();
+        }
+
+        public void Write(PacketWriter writer)
+        {
+            writer.Write(RoomId);
+        }
     }
 }

@@ -1,38 +1,41 @@
-﻿
-namespace block_racing_common.Network;
+﻿using System;
+using System.Collections.Generic;
 
-public class ReceiveBuffer
+namespace block_racing_common.Network
 {
-    private readonly List<byte> _buffer = new();
-
-    public void Append(byte[] data, int length)
+    public class ReceiveBuffer
     {
-        for (int i = 0; i < length; i++)
-            _buffer.Add(data[i]);
-    }
+        private readonly List<byte> _buffer = new();
 
-    public bool TryReadPacket(out byte[] packet)
-    {
-        packet = Array.Empty<byte>();
+        public void Append(byte[] data, int length)
+        {
+            for (int i = 0; i < length; i++)
+                _buffer.Add(data[i]);
+        }
 
-        if (_buffer.Count < PacketHeader.Size)
-            return false;
+        public bool TryReadPacket(out byte[] packet)
+        {
+            packet = Array.Empty<byte>();
 
-        ushort packetLength =
-            (ushort)(_buffer[0] | (_buffer[1] << 8)); // 강제 little endian
+            if (_buffer.Count < PacketHeader.Size)
+                return false;
 
-        Console.WriteLine($"PacketLength: {packetLength}");
+            ushort packetLength =
+                (ushort)(_buffer[0] | (_buffer[1] << 8)); // 강제 little endian
 
-        if (_buffer.Count < packetLength)
-            return false;
+            Console.WriteLine($"PacketLength: {packetLength}");
 
-        packet = new byte[packetLength];
+            if (_buffer.Count < packetLength)
+                return false;
 
-        for (int i = 0; i < packetLength; i++)
-            packet[i] = _buffer[i];
+            packet = new byte[packetLength];
 
-        _buffer.RemoveRange(0, packetLength);
+            for (int i = 0; i < packetLength; i++)
+                packet[i] = _buffer[i];
 
-        return true;
+            _buffer.RemoveRange(0, packetLength);
+
+            return true;
+        }
     }
 }
