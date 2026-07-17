@@ -1,6 +1,5 @@
 ﻿using block_racing_server.Game.Players;
 using block_racing_server.Game.Simulations;
-using System;
 
 namespace block_racing_server.Game.Rules;
 
