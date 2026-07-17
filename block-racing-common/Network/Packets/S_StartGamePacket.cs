@@ -1,10 +1,9 @@
 ﻿
+namespace block_racing_common.Network.Packets;
 
-namespace block_racing_server.Network.Packets;
-
-public class S_MatchFoundPacket : IPacket
+public class S_StartGamePacket : IPacket
 {
-    public PacketId PacketId => PacketId.S_MatchFound;
+    public PacketId PacketId => PacketId.S_StartGame;
 
     public int RoomId { get; set; }
 

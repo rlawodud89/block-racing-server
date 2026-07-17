@@ -1,4 +1,5 @@
-﻿namespace block_racing_server.Game.Simulations.Blocks;
+﻿
+namespace block_racing_common.Game.Enums;
 
 public enum PieceType
 {

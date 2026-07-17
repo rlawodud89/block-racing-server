@@ -1,5 +1,5 @@
 ﻿
-namespace block_racing_server.Network.Packets;
+namespace block_racing_common.Network.Packets;
 
 public class C_MatchRequestPacket : IPacket
 {

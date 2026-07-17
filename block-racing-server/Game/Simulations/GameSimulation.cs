@@ -2,7 +2,9 @@
 using block_racing_server.Game.Rules;
 using block_racing_server.Game.Simulations.Blocks;
 using block_racing_server.Game.Simulations.Lanes;
-using block_racing_server.Game.Simulations.Snapshots;
+using block_racing_server.Game.Snapshots;
+using block_racing_common.Game.Enums;
+using block_racing_common.Game.Snapshots;
 using System.Collections.Concurrent;
 
 namespace block_racing_server.Game.Simulations;
@@ -51,7 +53,7 @@ public class GameSimulation
 
     public GameStateSnapshot CreateSnapshot()
     {
-        return new GameStateSnapshot(_gameState);
+        return GameStateSnapshotBuilder.Create(_gameState);
     }
 
     public void EnqueueInput(PlayerInputCommand command)

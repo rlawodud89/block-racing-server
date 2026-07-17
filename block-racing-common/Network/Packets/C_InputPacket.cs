@@ -1,11 +1,6 @@
-﻿using block_racing_server.Game.Players;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using block_racing_common.Game.Enums;
 
-namespace block_racing_server.Network.Packets;
+namespace block_racing_common.Network.Packets;
 
 public class C_InputPacket : IPacket
 {

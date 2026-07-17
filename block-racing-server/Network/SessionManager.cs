@@ -1,4 +1,5 @@
-﻿using System.Collections.Concurrent;
+﻿using block_racing_common.Network;
+using System.Collections.Concurrent;
 
 namespace block_racing_server.Network;
 

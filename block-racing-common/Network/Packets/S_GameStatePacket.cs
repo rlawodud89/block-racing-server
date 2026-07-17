@@ -1,13 +1,7 @@
-﻿using block_racing_server.Game.Players;
-using block_racing_server.Game.Simulations.Blocks;
-using block_racing_server.Game.Simulations.Snapshots;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using block_racing_common.Game.Enums;
+using block_racing_common.Game.Snapshots;
 
-namespace block_racing_server.Network.Packets;
+namespace block_racing_common.Network.Packets;
 
 public class S_GameStatePacket : IPacket
 {
@@ -57,7 +51,6 @@ public class S_GameStatePacket : IPacket
 
         LaneSnapshot lane = ReadLane(reader);
 
-        List<FlyingBlockSnapshot> flyingBlocks = ReadFlyingBlocks(reader);
 
         return new PlayerSnapshot(
             id,
@@ -65,14 +58,13 @@ public class S_GameStatePacket : IPacket
             distance,
             speed,
             stunned,
-            mode,
-            lane,
-            flyingBlocks);
+            (PlayMode)mode,
+            lane);
     }
 
     private LaneSnapshot ReadLane(PacketReader reader)
     {
-        ushort blockCount =reader.ReadUInt16();
+        ushort blockCount = reader.ReadUInt16();
 
         byte[] blocks = new byte[blockCount];
 
@@ -81,7 +73,14 @@ public class S_GameStatePacket : IPacket
             blocks[i] = reader.ReadByte();
         }
 
-        return new LaneSnapshot(blocks);
+
+        List<FlyingBlockSnapshot> flyingBlocks =
+            ReadFlyingBlocks(reader);
+
+
+        return new LaneSnapshot(
+            blocks,
+            flyingBlocks);
     }
 
     private List<FlyingBlockSnapshot> ReadFlyingBlocks(
@@ -98,10 +97,14 @@ public class S_GameStatePacket : IPacket
             int ownerId = reader.ReadInt32();
 
             int x = reader.ReadInt32();
+
             int y = reader.ReadInt32();
 
+
             PieceType type = (PieceType)reader.ReadByte();
+
             Rotation rotation = (Rotation)reader.ReadByte();
+
 
             blocks.Add(
                 new FlyingBlockSnapshot(
@@ -120,7 +123,9 @@ public class S_GameStatePacket : IPacket
     public void Write(PacketWriter writer)
     {
         writer.Write(Snapshot.Tick);
+
         writer.Write((ushort)Snapshot.Players.Count);
+
 
         foreach (var player in Snapshot.Players)
         {
@@ -132,32 +137,40 @@ public class S_GameStatePacket : IPacket
     {
         writer.Write(player.Id);
 
+
         writer.Write(player.CarX);
+
         writer.Write(player.Distance);
+
         writer.Write(player.Speed);
+
 
         writer.Write(player.IsStunned);
 
-        writer.Write(player.Mode);
+        writer.Write((byte)player.Mode);
+
 
         WriteLane(writer, player.Lane);
-
-        WriteFlyingBlocks(writer, player.FlyingBlocks);
     }
 
-    private void WriteLane(PacketWriter writer,LaneSnapshot lane)
+    private void WriteLane(PacketWriter writer, LaneSnapshot lane)
     {
         writer.Write((ushort)lane.Blocks.Length);
+
 
         foreach (byte block in lane.Blocks)
         {
             writer.Write(block);
         }
+
+
+        WriteFlyingBlocks(writer, lane.FlyingBlocks);
     }
 
     private void WriteFlyingBlocks(PacketWriter writer, IReadOnlyList<FlyingBlockSnapshot> blocks)
     {
         writer.Write((ushort)blocks.Count);
+
 
         foreach (var block in blocks)
         {

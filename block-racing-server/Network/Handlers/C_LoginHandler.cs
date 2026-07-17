@@ -1,4 +1,4 @@
-﻿using block_racing_server.Network.Packets;
+﻿using block_racing_common.Network.Packets;
 
 namespace block_racing_server.Network.Handlers;
 
