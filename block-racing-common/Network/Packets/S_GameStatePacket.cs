@@ -10,6 +10,7 @@ namespace block_racing_common.Network.Packets
 
         public GameStateSnapshot Snapshot { get; private set; }
 
+        public S_GameStatePacket() { }
 
         public S_GameStatePacket(GameStateSnapshot snapshot)
         {
