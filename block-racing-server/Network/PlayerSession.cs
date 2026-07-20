@@ -119,7 +119,8 @@ public class PlayerSession
 
         S_LoginPacket responsePacket = new()
         {
-            PlayerId = Id
+            PlayerId = Id,
+            Nickname = nickname
         };
 
         await SendAsync(responsePacket);
