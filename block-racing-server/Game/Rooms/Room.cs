@@ -52,11 +52,7 @@ public class Room
             RoomId = Id
         };
 
-        PacketWriter writer = new((ushort)packet.PacketId);
-        packet.Write(writer);
-        byte[] bytes = writer.ToArray();
-
-        await player.Session.SendAsync(bytes);
+        await player.Session.SendAsync(packet);
 
         return true;
     }
