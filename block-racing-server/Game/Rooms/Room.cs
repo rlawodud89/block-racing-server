@@ -52,11 +52,7 @@ public class Room
             RoomId = Id
         };
 
-        PacketWriter writer = new((ushort)packet.PacketId);
-        packet.Write(writer);
-        byte[] bytes = writer.ToArray();
-
-        await player.Session.SendAsync(bytes);
+        await player.Session.SendAsync(packet);
 
         return true;
     }
@@ -147,6 +143,15 @@ public class Room
         {
             await player.Session.SendAsync(bytes);
         }
+
+        State = RoomState.Starting;
+
+        _ = BeginAfterCountdown(packet.CountdownSeconds);
+    }
+
+    private async Task BeginAfterCountdown(float seconds)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(seconds));
 
         State = RoomState.Playing;
     }

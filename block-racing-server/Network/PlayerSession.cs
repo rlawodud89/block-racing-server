@@ -3,6 +3,7 @@ using block_racing_server.Game.Players;
 using System.Net.Sockets;
 
 using block_racing_server.Game;
+using block_racing_common.Network.Packets;
 
 namespace block_racing_server.Network;
 
@@ -90,23 +91,39 @@ public class PlayerSession
         await _stream.WriteAsync(data);
     }
 
+    public async Task SendAsync(IPacket packet)
+    {
+        PacketWriter writer = new((ushort)packet.PacketId);
+        packet.Write(writer);
+
+        await _stream.WriteAsync(writer.ToArray());
+    }
+
     private void Disconnect()
     {
         _gameManager.UnregisterPlayer(Player);
 
         _sessionManager.Remove(this);
-       
+
 
         _stream.Close();
         _client.Close();
     }
 
 
-    public void OnLogin(string nickname)
+    public async Task OnLogin(string nickname)
     {
         Player = new Player(this, Id, nickname);
 
         _gameManager.RegisterPlayer(Player);
+
+        S_LoginPacket responsePacket = new()
+        {
+            PlayerId = Id,
+            Nickname = nickname
+        };
+
+        await SendAsync(responsePacket);
     }
 
     public void OnMatchRequest(bool isMatch)
