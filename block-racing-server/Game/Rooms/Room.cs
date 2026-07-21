@@ -144,6 +144,15 @@ public class Room
             await player.Session.SendAsync(bytes);
         }
 
+        State = RoomState.Starting;
+
+        _ = BeginAfterCountdown(packet.CountdownSeconds);
+    }
+
+    private async Task BeginAfterCountdown(float seconds)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(seconds));
+
         State = RoomState.Playing;
     }
 
