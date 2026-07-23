@@ -174,6 +174,8 @@ public class Room
 
         if (result != null)
         {
+            Console.WriteLine($"Room {Id} GAME END: Winner={result.Winner?.Id}, Loser={result.Loser?.Id}");
+
             // GameEndPacket 전송
             // Room 종료
 
