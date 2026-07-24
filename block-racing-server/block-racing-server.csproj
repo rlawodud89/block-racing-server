@@ -13,8 +13,4 @@
     <Folder Include="Database\" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\block-racing-common\block-racing-common.csproj" />
-  </ItemGroup>
-
 </Project>
