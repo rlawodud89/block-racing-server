@@ -63,31 +63,31 @@ public class GameSimulation
 
     public GameEndResult? Update(float deltaTime)
     {
-        ProcessInput();
+        try
+        {
+            ProcessInput();
+            UpdatePlayers(deltaTime);
+            _attackSystem.Update(_gameState);
+            UpdateBlockSystem(deltaTime);
+            UpdateLineClear();
+            UpdateLaneScroll(deltaTime);
+            _collisionSystem.Update(Players);
+            _gameState.UpdateTick(deltaTime);
 
-        UpdatePlayers(deltaTime);
+            GameEndResult? result = _gameEndSystem.Update(_gameState);
 
-        _attackSystem.Update(_gameState);
+            if (result == null)
+                return null;
 
-        UpdateBlockSystem(deltaTime);
-
-        UpdateLineClear();
-
-        UpdateLaneScroll(deltaTime);
-
-        _collisionSystem.Update(Players);
-
-        _gameState.UpdateTick(deltaTime);
-
-        GameEndResult? result = _gameEndSystem.Update(_gameState);
-
-        if (result == null)
-            return null;
-
-        _gameState.EndGame();
-        return result;
+            _gameState.EndGame();
+            return result;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"GameSimulation Update Error: {ex}");
+            throw;
+        }
     }
-
 
     private void ProcessInput()
     {
@@ -96,22 +96,27 @@ public class GameSimulation
             switch (input.Type)
             {
                 case InputType.MoveLeft:
+                    Console.WriteLine($"Player {input.Player.Id} MoveLeft");
                     input.Player.MoveLeft();
                     break;
 
                 case InputType.MoveRight:
+                    Console.WriteLine($"Player {input.Player.Id} MoveRight");
                     input.Player.MoveRight();
                     break;
 
                 case InputType.ChangeMode:
+                    Console.WriteLine($"Player {input.Player.Id} ChangeMode");
                     input.Player.ChangeMode();
                     break;
 
                 case InputType.Shoot:
+                    Console.WriteLine($"Player {input.Player.Id} Shoot");
                     Shoot(input.Player);
                     break;
 
                 case InputType.Rotate:
+                    Console.WriteLine($"Player {input.Player.Id} Rotate");
                     input.Player.RotatePiece();
                     break;
             }
