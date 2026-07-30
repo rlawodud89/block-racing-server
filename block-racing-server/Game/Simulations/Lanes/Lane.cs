@@ -102,7 +102,7 @@ public class Lane
         foreach (var cell in attack.Piece.Cells)
         {
             int x = attack.SpawnX + cell.X;
-            int y = Height - 1 - attack.Piece.Height;
+            int y = Height - 1 + cell.Y;
 
             PlaceBlock(
                 x,
