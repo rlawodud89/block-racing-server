@@ -1,4 +1,4 @@
-﻿using block_racing_server.Game.Simulations.Lanes;
+﻿using block_racing_common.Game.Pieces;
 using block_racing_common.Game.Enums;
 
 namespace block_racing_server.Game.Simulations.Blocks;
