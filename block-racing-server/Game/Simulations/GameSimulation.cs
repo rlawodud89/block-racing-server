@@ -151,7 +151,7 @@ public class GameSimulation
                 block.MoveDown(deltaTime);
 
 
-                if (CheckBlockCollision(lane, block))
+                if (CheckBlockCollision(lane, block, deltaTime))
                 {
                     lane.SettleBlock(block);
 
@@ -221,6 +221,10 @@ public class GameSimulation
 
     private void SpawnFlyingBlock(Player player, BlockPiece piece)
     {
+        Console.WriteLine(
+            $"Spawn FlyingBlock - Player:{player.Id}, CarX:{player.Car.X}, Piece:{piece.Type}"
+        );
+
         FlyingBlock block =
             new FlyingBlock(
                 piece,
@@ -229,22 +233,31 @@ public class GameSimulation
                 player.Id
             );
 
+        Console.WriteLine(
+            $"FlyingBlock Created - X:{block.X}, Y:{block.Y}, GridY:{block.GridY}"
+        );
+
         player.Lane.FlyingBlocks.Add(block);
     }
 
-    private bool CheckBlockCollision(Lane lane, FlyingBlock block)
+    private bool CheckBlockCollision(Lane lane, FlyingBlock block, float deltaTime)
     {
+        float nextY = block.Y + block.MoveSpeed * deltaTime;
+
+
         foreach (var cell in block.Piece.Cells)
         {
             int x = block.X + cell.X;
-            int y = (int)MathF.Floor(block.Y) + cell.Y;
+            int y = (int)MathF.Floor(nextY) + cell.Y;
 
 
+            // 바닥 도착
             if (y >= Lane.Height)
                 return true;
 
 
-            if (lane.Grid[y, x].Block != null)
+            // 기존 블록 충돌
+            if (y >= 0 && lane.HasBlock(x, y))
                 return true;
         }
 

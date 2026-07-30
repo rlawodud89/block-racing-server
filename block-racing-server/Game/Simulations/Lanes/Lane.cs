@@ -87,9 +87,15 @@ public class Lane
     {
         foreach (var cell in block.Piece.Cells)
         {
+            int x = block.X + cell.X;
+            int y = block.GridY + cell.Y;
+
+            if (y < 0 || y >= Height)
+                continue;
+
             PlaceBlock(
-                block.X + cell.X,
-                block.GridY + cell.Y,
+                x,
+                y,
                 new Block(
                     BlockType.Normal,
                     block.OwnerId));

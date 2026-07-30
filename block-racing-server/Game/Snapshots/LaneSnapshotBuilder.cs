@@ -39,6 +39,13 @@ public static class LaneSnapshotBuilder
 
     private static List<FlyingBlockSnapshot> CreateFlyingBlocks(Lane lane)
     {
+        foreach (var block in lane.FlyingBlocks)
+        {
+            Console.WriteLine(
+                $"Snapshot FlyingBlock X:{block.X}, GridY:{block.GridY}"
+            );
+        }
+
         return lane.FlyingBlocks
             .Select(FlyingBlockSnapshotBuilder.Create)
             .ToList();
