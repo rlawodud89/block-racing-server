@@ -176,8 +176,30 @@ public class Room
         {
             Console.WriteLine($"Room {Id} GAME END: Winner={result.Winner?.Id}, Loser={result.Loser?.Id}");
 
-            // GameEndPacket 전송
-            // Room 종료
+            foreach (Player player in _players)
+            {
+                GameResultType gameResult;
+
+                if (result.Winner == null && result.Loser == null)
+                {
+                    gameResult = GameResultType.Draw;
+                }
+                else if (result.Winner?.Id == player.Id)
+                {
+                    gameResult = GameResultType.Win;
+                }
+                else
+                {
+                    gameResult = GameResultType.Lose;
+                }
+
+                var packet = new S_GameEndPacket
+                {
+                    Result = gameResult
+                };
+
+                await player.Session.SendAsync(packet);
+            }
 
             State = RoomState.Ended;
 
