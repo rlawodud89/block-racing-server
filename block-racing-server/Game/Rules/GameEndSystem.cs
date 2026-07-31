@@ -9,6 +9,8 @@ public class GameEndSystem
     {
         foreach (Player player in gameState.Players.Values)
         {
+            Console.WriteLine($"Player {player.Id} distance: {player.Car.Distance}");
+
             if (player.Car.Distance >= gameState.TargetDistance)
             {
                 Player loser = gameState.Players.Values
