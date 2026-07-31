@@ -14,6 +14,9 @@ public static class PlayerSnapshotBuilder
             player.Car.Speed,
             player.Car.IsStunned,
             player.Mode,
+            player.CurrentPiece?.Type,
+            player.CurrentPiece?.Rotation,
+            player.PieceCooldown,
             LaneSnapshotBuilder.Create(player.Lane)
         );
     }

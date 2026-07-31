@@ -14,6 +14,7 @@ public static class GameStateSnapshotBuilder
 
         return new GameStateSnapshot(
             gameState.Tick,
+            gameState.TargetDistance,
             players
         );
     }
