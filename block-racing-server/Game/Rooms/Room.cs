@@ -87,10 +87,12 @@ public class Room
             case RoomState.Ready:
             case RoomState.Starting:
                 {
+                    var packet = new S_MatchCanceledPacket();
+
+                    await remain.Session.SendAsync(packet);
+
                     remain.Room = null;
                     remain.MatchState = MatchState.None;
-
-                    // TODO: S_MatchCanceledPacket
 
                     State = RoomState.Ended;
                     break;
