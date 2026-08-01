@@ -26,6 +26,15 @@ public class Car
         Speed = speed;
     }
 
+    public void Reset()
+    {
+        X = 2;
+        Speed = 1f;
+        Distance = 0f;
+        IsStunned = false;
+        IsInvincible = false;
+        StunRemainTick = 0;
+    }
 
     public void MoveLeft()
     {
