@@ -19,10 +19,19 @@ public class GameManager
     {
         await _matchMaker.TryMatch();
 
+        var rooms = _roomManager.Rooms.ToList();
+
         await Task.WhenAll(
-            _roomManager.Rooms
-            .Select(room => room.Update())
+            rooms.Select(room => room.Update())
         );
+
+        foreach (Room room in rooms)
+        {
+            if (room.State == RoomState.Ended)
+            {
+                _roomManager.RemoveRoom(room.Id);
+            }
+        }
     }
 
     public void RegisterPlayer(Player player)
@@ -35,18 +44,19 @@ public class GameManager
         _matchMaker.Register(player);
     }
 
-    public void UnregisterPlayer(Player player)
+    public async Task UnregisterPlayer(Player player)
     {
-        if (player == null) return;
-
-        player.MatchState = MatchState.None; // 먼저 상태 차단
-
-        _matchMaker.Unregister(player);
+        if (player == null)
+            return;
 
         var room = player.Room;
-        player.Room = null;
 
-        room?.RemovePlayer(player);
+        if (room != null)
+        {
+            await room.RemovePlayerAsync(player);
+        }
+
+        _matchMaker.Unregister(player);
     }
 
     public void EnqueueMatch(Player player)

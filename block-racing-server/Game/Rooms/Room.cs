@@ -36,7 +36,14 @@ public class Room
         if (_players.Count >= 2)
             return false;
 
+        if (player.Room != null)
+            return false;
+
+        if (player.MatchState != MatchState.Matching)
+            return false;
+
         Console.WriteLine($"Room {Id}: Player {player.Id} added");
+
         _players.Add(player);
         player.Room = this;
 
@@ -57,36 +64,49 @@ public class Room
         return true;
     }
 
-    public bool RemovePlayer(Player player)
+    public async Task<bool> RemovePlayerAsync(Player player)
     {
         if (!_players.Remove(player))
             return false;
 
+        _readyMap.Remove(player.Id);
+
         player.Room = null;
         player.MatchState = MatchState.None;
 
-        if (_players.Count == 1)
-        {
-            Player remain = _players[0];
-
-            switch (State)
-            {
-                case RoomState.Ready:
-                case RoomState.Starting:
-                    // TODO : MatchCanceledPacket
-                    remain.MatchState = MatchState.None;
-                    break;
-
-                case RoomState.Playing:
-                    // TODO : GameEndPacket (Win)
-                    State = RoomState.Ended;
-                    break;
-            }
-        }
-
         if (_players.Count == 0)
         {
-            // TODO : RoomManager.RemoveRoom(this);
+            State = RoomState.Ended;
+            return true;
+        }
+
+        Player remain = _players[0];
+
+        switch (State)
+        {
+            case RoomState.Ready:
+            case RoomState.Starting:
+                {
+                    remain.Room = null;
+                    remain.MatchState = MatchState.None;
+
+                    // TODO: S_MatchCanceledPacket
+
+                    State = RoomState.Ended;
+                    break;
+                }
+
+            case RoomState.Playing:
+                {
+                    await EndGame(
+                        new GameEndResult(
+                            winner: remain,
+                            loser: player
+                        )
+                    );
+
+                    break;
+                }
         }
 
         return true;
@@ -144,8 +164,6 @@ public class Room
             await player.Session.SendAsync(bytes);
         }
 
-        State = RoomState.Starting;
-
         _ = BeginAfterCountdown(packet.CountdownSeconds);
     }
 
@@ -174,35 +192,7 @@ public class Room
 
         if (result != null)
         {
-            Console.WriteLine($"Room {Id} GAME END: Winner={result.Winner?.Id}, Loser={result.Loser?.Id}");
-
-            foreach (Player player in _players)
-            {
-                GameResultType gameResult;
-
-                if (result.Winner == null && result.Loser == null)
-                {
-                    gameResult = GameResultType.Draw;
-                }
-                else if (result.Winner?.Id == player.Id)
-                {
-                    gameResult = GameResultType.Win;
-                }
-                else
-                {
-                    gameResult = GameResultType.Lose;
-                }
-
-                var packet = new S_GameEndPacket
-                {
-                    Result = gameResult
-                };
-
-                await player.Session.SendAsync(packet);
-            }
-
-            State = RoomState.Ended;
-
+            await EndGame(result);
             return;
         }
 
@@ -231,6 +221,48 @@ public class Room
         {
             await player.Session.SendAsync(bytes);
         }
+    }
+
+    private async Task EndGame(GameEndResult result)
+    {
+        Console.WriteLine(
+            $"Room {Id} GAME END: " +
+            $"Winner={result.Winner?.Id}, " +
+            $"Loser={result.Loser?.Id}");
+
+        foreach (Player player in _players)
+        {
+            GameResultType gameResult;
+
+            if (result.Winner == null && result.Loser == null)
+            {
+                gameResult = GameResultType.Draw;
+            }
+            else if (result.Winner?.Id == player.Id)
+            {
+                gameResult = GameResultType.Win;
+            }
+            else
+            {
+                gameResult = GameResultType.Lose;
+            }
+
+            var packet = new S_GameEndPacket
+            {
+                Result = gameResult
+            };
+
+            await player.Session.SendAsync(packet);
+        }
+
+        // 게임 종료 후 플레이어를 다시 매칭 가능한 상태로 변경
+        foreach (Player player in _players)
+        {
+            player.Room = null;
+            player.MatchState = MatchState.None;
+        }
+
+        State = RoomState.Ended;
     }
 
     public void EnqueueInput(Player player, InputType type)

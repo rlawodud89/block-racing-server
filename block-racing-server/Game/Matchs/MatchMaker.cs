@@ -58,13 +58,32 @@ public class MatchMaker
         var p2 = candidates[1];
 
         // 원자적 상태 변경
-        if (!TryReserve(p1) || !TryReserve(p2))
+        if (!TryReserve(p1))
             return;
+
+        if (!TryReserve(p2))
+        {
+            p1.MatchState = MatchState.Queued;
+            return;
+        }
 
         var room = _roomManager.CreateRoom();
 
-        await room.AddPlayer(p1);
-        await room.AddPlayer(p2);
+        bool addedP1 = await room.AddPlayer(p1);
+        bool addedP2 = await room.AddPlayer(p2);
+
+        if (!addedP1 || !addedP2)
+        {
+            _roomManager.RemoveRoom(room.Id);
+
+            p1.Room = null;
+            p2.Room = null;
+
+            p1.MatchState = MatchState.None;
+            p2.MatchState = MatchState.None;
+
+            return;
+        }
 
         p1.MatchState = MatchState.InRoom;
         p2.MatchState = MatchState.InRoom;
