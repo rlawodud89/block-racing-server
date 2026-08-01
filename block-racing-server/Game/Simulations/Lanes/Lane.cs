@@ -41,6 +41,27 @@ public class Lane
         return grid;
     }
 
+    public void Reset()
+    {
+        // Grid 초기화
+        for (int y = 0; y < Height; y++)
+        {
+            for (int x = 0; x < Width; x++)
+            {
+                Grid[y, x].Block = null;
+            }
+        }
+
+        // 대기 중인 공격 초기화
+        PendingAttacks.Clear();
+
+        // 공중에 날아가는 블록 초기화
+        FlyingBlocks.Clear();
+
+        // 레인 스크롤 상태 초기화
+        ScrollTimer = 0f;
+    }
+
     public bool HasBlock(int x, int y)
     {
         if (x < 0 || x >= Width)

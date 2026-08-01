@@ -10,7 +10,7 @@ public class GameState
 
     public int TargetDistance { get; } = 50;
 
-    public bool IsGameEnd { get; private set; }
+    public bool IsGameEnd { get; private set; } = false;
 
     private readonly Dictionary<int, Player> _players = new();
 

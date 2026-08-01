@@ -36,12 +36,9 @@ public class GameSimulation
     {
         foreach (Player player in Players.Values)
         {
-            player.SetCurrentPiece(_pieceGenerator.Create());
+            player.ResetGameState();
 
-            // 앞으로 추가될 초기화들도 여기서
-            // player.Car.SetSpeed(...)
-            // player.Mode = PlayMode.Defense;
-            // player.ResetCooldown();
+            player.SetCurrentPiece(_pieceGenerator.Create());
         }
     }
 

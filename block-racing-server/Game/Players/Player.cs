@@ -45,6 +45,27 @@ public class Player
         Car = new Car(1);
     }
 
+    public void ResetGameState()
+    {
+        // 자동차 상태 초기화
+        Car.Reset();
+
+        // 현재 들고 있는 블록 초기화
+        CurrentPiece = null;
+
+        // 블록 생성 쿨다운 초기화
+        PieceCooldown = 0f;
+
+        // 플레이 모드 초기화
+        Mode = PlayMode.Defense;
+
+        // 레인 상태 초기화
+        Lane.Reset();
+
+        // 입력 상태 초기화
+        Input.Clear();
+    }
+
     public void Update(float deltaTime)
     {
         if (CurrentPiece != null)
