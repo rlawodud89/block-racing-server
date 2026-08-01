@@ -108,10 +108,12 @@ public class Player
 
     public BlockPiece? TakePiece()
     {
+        if (PieceCooldown > 0f)
+            return null;
+
         BlockPiece? piece = CurrentPiece;
 
         CurrentPiece = null;
-
         PieceCooldown = PieceCooldownTime;
 
         return piece;
