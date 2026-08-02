@@ -38,13 +38,16 @@ public class AttackSystem
 
     private bool CanSpawn(Lane lane, AttackPiece attack)
     {
+        int maxY = attack.Piece.Cells.Max(cell => cell.Y);
+
         foreach (var cell in attack.Piece.Cells)
         {
             int x = attack.SpawnX + cell.X;
-            int y = Lane.Height - 1 + cell.Y;
+            int y = Lane.Height - 1 + cell.Y - maxY;
 
+            // 범위 밖은 잘라내므로 Spawn을 막지 않음
             if (x < 0 || x >= Lane.Width)
-                return false;
+                continue;
 
             if (y < 0 || y >= Lane.Height)
                 continue;

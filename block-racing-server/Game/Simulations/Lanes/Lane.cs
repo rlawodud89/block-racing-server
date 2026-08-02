@@ -126,10 +126,20 @@ public class Lane
 
     public void SpawnAttack(AttackPiece attack)
     {
+        int maxY = attack.Piece.Cells.Max(cell => cell.Y);
+
         foreach (var cell in attack.Piece.Cells)
         {
             int x = attack.SpawnX + cell.X;
-            int y = Height - 1 + cell.Y;
+            int y = Height - 1 + cell.Y - maxY;
+
+            // 좌우 범위를 벗어난 Cell은 잘라냄
+            if (x < 0 || x >= Width)
+                continue;
+
+            // 위아래 범위를 벗어난 Cell은 잘라냄
+            if (y < 0 || y >= Height)
+                continue;
 
             PlaceBlock(
                 x,
