@@ -38,22 +38,46 @@ public class AttackSystem
 
     private bool CanSpawn(Lane lane, AttackPiece attack)
     {
+        int maxY = attack.Piece.Cells.Max(cell => cell.Y);
+
         foreach (var cell in attack.Piece.Cells)
         {
             int x = attack.SpawnX + cell.X;
-            int y = Lane.Height - 1 + cell.Y;
+            int y = Lane.Height - 1 + cell.Y - maxY;
 
+            // 범위 밖은 잘라내므로 Spawn을 막지 않음
             if (x < 0 || x >= Lane.Width)
-                return false;
+                continue;
 
             if (y < 0 || y >= Lane.Height)
                 continue;
 
+            // 이미 Grid에 블록이 있다면 Spawn 불가
             if (lane.HasBlock(x, y))
+                return false;
+
+            // FlyingBlock과 겹치는지 검사
+            if (HasFlyingBlock(lane, x, y))
                 return false;
         }
 
         return true;
     }
 
+    private bool HasFlyingBlock(Lane lane, int x, int y)
+    {
+        foreach (var flyingBlock in lane.FlyingBlocks)
+        {
+            foreach (var cell in flyingBlock.Piece.Cells)
+            {
+                int flyingX = flyingBlock.X + cell.X;
+                int flyingY = flyingBlock.GridY + cell.Y;
+
+                if (flyingX == x && flyingY == y)
+                    return true;
+            }
+        }
+
+        return false;
+    }
 }
