@@ -144,7 +144,6 @@ public class GameSimulation
 
             List<FlyingBlock> landingBlocks = new();
 
-            // 1. 이번 Tick에 착지할 FlyingBlock 확인
             foreach (FlyingBlock block in lane.FlyingBlocks)
             {
                 if (CheckBlockCollision(lane, block, deltaTime))
@@ -153,7 +152,6 @@ public class GameSimulation
                 }
             }
 
-            // 2. 착지하지 않는 FlyingBlock만 이동
             foreach (FlyingBlock block in lane.FlyingBlocks)
             {
                 if (landingBlocks.Contains(block))
@@ -162,17 +160,14 @@ public class GameSimulation
                 block.MoveDown(deltaTime);
             }
 
-            // 3. 일반 충돌로 착지하는 블록을 먼저 Grid에 반영
             foreach (FlyingBlock block in landingBlocks)
             {
                 lane.SettleBlock(block);
                 block.Finish();
             }
 
-            // 4. 아직 날아가는 블록들을 이용해서 Line Clear 가능 여부 확인
-            ResolveFlyingBlockLineClear(lane);
+            _lineClearSystem.SettleBlocksCompletingLines(lane);
 
-            // 5. 끝난 FlyingBlock 제거
             lane.FlyingBlocks.RemoveAll(
                 b => b.IsFinished
             );
@@ -264,97 +259,6 @@ public class GameSimulation
 
             // 기존 블록 충돌
             if (y >= 0 && lane.HasBlock(x, y))
-                return true;
-        }
-
-        return false;
-    }
-
-    private void ResolveFlyingBlockLineClear(Lane lane)
-    {
-        List<FlyingBlock> activeBlocks =
-            lane.FlyingBlocks
-                .Where(b => !b.IsFinished)
-                .ToList();
-
-        if (activeBlocks.Count == 0)
-            return;
-
-        List<int> completedLines =
-            FindCompletedLines(lane, activeBlocks);
-
-        if (completedLines.Count == 0)
-            return;
-
-        foreach (FlyingBlock block in activeBlocks)
-        {
-            if (!ContributesToLine(block, completedLines))
-                continue;
-
-            lane.SettleBlock(block);
-            block.Finish();
-        }
-    }
-
-    private List<int> FindCompletedLines(Lane lane, IReadOnlyList<FlyingBlock> flyingBlocks)
-    {
-        List<int> lines = new();
-
-        for (int y = 0; y < Lane.Height; y++)
-        {
-            bool complete = true;
-
-            for (int x = 0; x < Lane.Width; x++)
-            {
-                if (!IsOccupied(lane, flyingBlocks, x, y))
-                {
-                    complete = false;
-                    break;
-                }
-            }
-
-            if (complete)
-                lines.Add(y);
-        }
-
-        return lines;
-    }
-
-    private bool IsOccupied(Lane lane, IReadOnlyList<FlyingBlock> flyingBlocks, int x, int y)
-    {
-        if (lane.HasBlock(x, y))
-            return true;
-
-        foreach (FlyingBlock block in flyingBlocks)
-        {
-            if (FlyingBlockOccupies(block, x, y))
-                return true;
-        }
-
-        return false;
-    }
-
-    private bool FlyingBlockOccupies(FlyingBlock block, int x, int y)
-    {
-        foreach (var cell in block.Piece.Cells)
-        {
-            int blockX = block.X + cell.X;
-            int blockY = block.GridY + cell.Y;
-
-            if (blockX == x && blockY == y)
-                return true;
-        }
-
-        return false;
-    }
-
-    private bool ContributesToLine(FlyingBlock block, IReadOnlyList<int> completedLines)
-    {
-        foreach (var cell in block.Piece.Cells)
-        {
-            int y = block.GridY + cell.Y;
-
-            if (completedLines.Contains(y))
                 return true;
         }
 
