@@ -28,11 +28,9 @@ public class LineClearSystem
     {
         List<int> lines = new();
 
-
         for (int y = 0; y < Lane.Height; y++)
         {
             bool complete = true;
-
 
             for (int x = 0; x < Lane.Width; x++)
             {
@@ -43,13 +41,11 @@ public class LineClearSystem
                 }
             }
 
-
             if (complete)
             {
                 lines.Add(y);
             }
         }
-
 
         return lines;
     }
