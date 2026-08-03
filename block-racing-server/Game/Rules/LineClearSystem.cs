@@ -72,7 +72,7 @@ public class LineClearSystem
             if (!ContributesToLine(block, completedLines))
                 continue;
 
-            lane.SettleBlock(block);
+            lane.SettleBlock(block, block.GridY);
             block.Finish();
         }
     }

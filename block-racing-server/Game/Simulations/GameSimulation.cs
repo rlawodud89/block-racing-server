@@ -142,35 +142,63 @@ public class GameSimulation
         {
             Lane lane = player.Lane;
 
-            List<FlyingBlock> landingBlocks = new();
+            List<(FlyingBlock Block, int LandingGridY)> landingBlocks = new();
 
+            // 1. 이번 Tick에 착지하는 FlyingBlock 확인
             foreach (FlyingBlock block in lane.FlyingBlocks)
             {
-                if (CheckBlockCollision(lane, block, deltaTime))
+                int? landingGridY =
+                    CheckBlockCollision(
+                        lane,
+                        block,
+                        deltaTime);
+
+                if (landingGridY.HasValue)
                 {
-                    landingBlocks.Add(block);
+                    landingBlocks.Add(
+                        (block, landingGridY.Value));
                 }
             }
 
+            // 2. 착지하지 않는 FlyingBlock만 이동
             foreach (FlyingBlock block in lane.FlyingBlocks)
             {
-                if (landingBlocks.Contains(block))
+                bool isLanding =
+                    landingBlocks.Any(
+                        x => x.Block == block);
+
+                if (isLanding)
                     continue;
 
                 block.MoveDown(deltaTime);
             }
 
-            foreach (FlyingBlock block in landingBlocks)
+            // 3. 충돌한 FlyingBlock을 정확한 위치에 정착
+            foreach (var landing in landingBlocks)
             {
-                lane.SettleBlock(block);
+                FlyingBlock block = landing.Block;
+                int landingGridY = landing.LandingGridY;
+
+                Console.WriteLine(
+                    $"[Landing] " +
+                    $"Owner:{block.OwnerId}, " +
+                    $"OldY:{block.Y:F2}, " +
+                    $"CurrentGridY:{block.GridY}, " +
+                    $"LandingGridY:{landingGridY}");
+
+                lane.SettleBlock(
+                    block,
+                    landingGridY);
+
                 block.Finish();
             }
 
+            // 4. FlyingBlock까지 포함해서 Line Clear 처리
             _lineClearSystem.SettleBlocksCompletingLines(lane);
 
+            // 5. 정착된 FlyingBlock 제거
             lane.FlyingBlocks.RemoveAll(
-                b => b.IsFinished
-            );
+                b => b.IsFinished);
         }
     }
 
@@ -241,27 +269,63 @@ public class GameSimulation
         player.Lane.FlyingBlocks.Add(block);
     }
 
-    private bool CheckBlockCollision(Lane lane, FlyingBlock block, float deltaTime)
+    private int? CheckBlockCollision(Lane lane, FlyingBlock block, float deltaTime)
     {
-        float nextY = block.Y + block.MoveSpeed * deltaTime;
+        int currentGridY = block.GridY;
 
+        int nextGridY = (int)MathF.Floor(block.Y + block.MoveSpeed * deltaTime);
 
+        // 현재 위치부터 이미 겹쳐 있다면
+        // 현재 위치보다 한 칸 위에 정착
+        if (!CanPlaceBlock(lane, block, currentGridY))
+        {
+            return currentGridY - 1;
+        }
+
+        // 같은 Grid 칸 안에서는 이동
+        if (currentGridY == nextGridY)
+            return null;
+
+        // 다음 Grid까지 검사
+        for (int gridY = currentGridY + 1; gridY <= nextGridY; gridY++)
+        {
+            if (CanPlaceBlock(lane, block, gridY))
+            {
+                continue;
+            }
+
+            return gridY - 1;
+        }
+
+        // 바닥에 도달한 경우
+        if (nextGridY >= Lane.Height)
+        {
+            return Lane.Height - 1;
+        }
+
+        return null;
+    }
+
+    private bool CanPlaceBlock(Lane lane, FlyingBlock block, int gridY)
+    {
         foreach (var cell in block.Piece.Cells)
         {
             int x = block.X + cell.X;
-            int y = (int)MathF.Floor(nextY) + cell.Y;
+            int y = gridY + cell.Y;
 
-
-            // 바닥 도착
+            // 바닥을 넘어가면 배치 불가능
             if (y >= Lane.Height)
-                return true;
+                return false;
 
+            // 아직 위쪽에 있는 셀은 허용
+            if (y < 0)
+                continue;
 
-            // 기존 블록 충돌
-            if (y >= 0 && lane.HasBlock(x, y))
-                return true;
+            // 기존 Grid와 겹치면 배치 불가능
+            if (lane.HasBlock(x, y))
+                return false;
         }
 
-        return false;
+        return true;
     }
 }
