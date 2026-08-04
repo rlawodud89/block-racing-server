@@ -1,15 +1,24 @@
 ﻿
-
 namespace block_racing_server.Game.Simulations.Lanes;
 
 public class Car
 {
-    public const int Width = 2;
-    public const int Height = 1;
+    public const int Width = 1;
+    public const int Height = 2;
 
     public int X { get; private set; } = 2;
 
     public float Speed { get; private set; }
+
+    public float CurrentSpeed
+    {
+        get
+        {
+            return IsStunned
+                ? Speed * 0.2f
+                : Speed;
+        }
+    }
 
     public float Distance { get; private set; }
 
@@ -20,6 +29,8 @@ public class Car
     public int StunRemainTick { get; private set; }
 
     private const float Penalty = 1.0f;
+    private const float LineClearSpeedBonus = 0.05f;
+    private const float MaxSpeed = 3.0f;
 
     public Car(float speed)
     {
@@ -50,27 +61,23 @@ public class Car
 
     public void Update(float deltaTime)
     {
-        if (IsStunned)
-        {
-            StunRemainTick--;
+        Distance += CurrentSpeed * deltaTime;
 
-            Distance += Speed * 0.2f * deltaTime;
+        if (!IsStunned)
+            return;
 
-            if (StunRemainTick <= 0)
-            {
-                IsStunned = false;
-                IsInvincible = false;
+        StunRemainTick--;
 
-                Speed -= Penalty;
+        if (StunRemainTick > 0)
+            return;
 
-                if (Speed < 1f)
-                    Speed = 1f;
-            }
-        }
-        else
-        {
-            Distance += Speed * deltaTime;
-        }
+        IsStunned = false;
+        IsInvincible = false;
+
+        Speed -= Penalty;
+
+        if (Speed < 1f)
+            Speed = 1f;
     }
 
     public void OnCollision()
@@ -84,13 +91,11 @@ public class Car
         StunRemainTick = 40;
     }
 
-    public void AddSpeed(float value)
+    public void AddLineClearSpeed(int lineCount)
     {
-        Speed += value;
-    }
-
-    public void SetSpeed(float speed)
-    {
-        Speed = speed;
+        Speed = MathF.Min(
+            Speed + lineCount * LineClearSpeedBonus,
+            MaxSpeed
+        );
     }
 }

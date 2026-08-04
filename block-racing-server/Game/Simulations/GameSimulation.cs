@@ -208,6 +208,7 @@ public class GameSimulation
         {
             _laneScrollSystem.Update(
                 player.Lane,
+                player.Car.CurrentSpeed,
                 deltaTime);
         }
     }
@@ -216,7 +217,12 @@ public class GameSimulation
     {
         foreach (Player player in Players.Values)
         {
-            _lineClearSystem.ClearLines(player.Lane);
+            int clearCount = _lineClearSystem.ClearLines(player.Lane);
+
+            if (clearCount > 0)
+            {
+                player.Car.AddLineClearSpeed(clearCount);
+            }
         }
     }
 
@@ -262,7 +268,7 @@ public class GameSimulation
             new FlyingBlock(
                 piece,
                 player.Car.X,
-                0,
+                Car.Height,
                 player.Id
             );
 
