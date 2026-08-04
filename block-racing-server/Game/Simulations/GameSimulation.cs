@@ -217,7 +217,12 @@ public class GameSimulation
     {
         foreach (Player player in Players.Values)
         {
-            _lineClearSystem.ClearLines(player.Lane);
+            int clearCount = _lineClearSystem.ClearLines(player.Lane);
+
+            if (clearCount > 0)
+            {
+                player.Car.AddLineClearSpeed(clearCount);
+            }
         }
     }
 

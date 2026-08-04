@@ -1,5 +1,4 @@
 ﻿
-
 namespace block_racing_server.Game.Simulations.Lanes;
 
 public class Car
@@ -30,6 +29,8 @@ public class Car
     public int StunRemainTick { get; private set; }
 
     private const float Penalty = 1.0f;
+    private const float LineClearSpeedBonus = 0.05f;
+    private const float MaxSpeed = 3.0f;
 
     public Car(float speed)
     {
@@ -60,23 +61,23 @@ public class Car
 
     public void Update(float deltaTime)
     {
-        if (IsStunned)
-        {
-            StunRemainTick--;
-
-            if (StunRemainTick <= 0)
-            {
-                IsStunned = false;
-                IsInvincible = false;
-
-                Speed -= Penalty;
-
-                if (Speed < 1f)
-                    Speed = 1f;
-            }
-        }
-
         Distance += CurrentSpeed * deltaTime;
+
+        if (!IsStunned)
+            return;
+
+        StunRemainTick--;
+
+        if (StunRemainTick > 0)
+            return;
+
+        IsStunned = false;
+        IsInvincible = false;
+
+        Speed -= Penalty;
+
+        if (Speed < 1f)
+            Speed = 1f;
     }
 
     public void OnCollision()
@@ -90,15 +91,11 @@ public class Car
         StunRemainTick = 40;
     }
 
-    public void AddSpeed(float value)
+    public void AddLineClearSpeed(int lineCount)
     {
-        Speed += value;
+        Speed = MathF.Min(
+            Speed + lineCount * LineClearSpeedBonus,
+            MaxSpeed
+        );
     }
-
-    public void SetSpeed(float speed)
-    {
-        Speed = speed;
-    }
-
-
 }
