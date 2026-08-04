@@ -11,6 +11,16 @@ public class Car
 
     public float Speed { get; private set; }
 
+    public float CurrentSpeed
+    {
+        get
+        {
+            return IsStunned
+                ? Speed * 0.2f
+                : Speed;
+        }
+    }
+
     public float Distance { get; private set; }
 
     public bool IsStunned { get; private set; }
@@ -54,8 +64,6 @@ public class Car
         {
             StunRemainTick--;
 
-            Distance += Speed * 0.2f * deltaTime;
-
             if (StunRemainTick <= 0)
             {
                 IsStunned = false;
@@ -67,10 +75,8 @@ public class Car
                     Speed = 1f;
             }
         }
-        else
-        {
-            Distance += Speed * deltaTime;
-        }
+
+        Distance += CurrentSpeed * deltaTime;
     }
 
     public void OnCollision()
@@ -93,4 +99,6 @@ public class Car
     {
         Speed = speed;
     }
+
+
 }

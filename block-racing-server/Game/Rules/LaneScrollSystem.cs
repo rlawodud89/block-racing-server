@@ -5,22 +5,19 @@ namespace block_racing_server.Game.Rules;
 
 public class LaneScrollSystem
 {
-    public float ScrollInterval { get; set; } = 0.5f;
+    private const float BaseScrollSpeed = 3f;
 
 
-    public void Update(Lane lane, float deltaTime)
+    public void Update(Lane lane, float carSpeed, float deltaTime)
     {
-        lane.ScrollTimer += deltaTime;
+        lane.ScrollTimer += carSpeed * BaseScrollSpeed * deltaTime;
 
-        if (lane.ScrollTimer < ScrollInterval)
-            return;
-
-        Scroll(lane);
-
-        lane.ScrollTimer = 0;
+        while (lane.ScrollTimer >= 1f)
+        {
+            Scroll(lane);
+            lane.ScrollTimer -= 1f;
+        }
     }
-
-
 
     private void Scroll(Lane lane)
     {

@@ -208,6 +208,7 @@ public class GameSimulation
         {
             _laneScrollSystem.Update(
                 player.Lane,
+                player.Car.CurrentSpeed,
                 deltaTime);
         }
     }
