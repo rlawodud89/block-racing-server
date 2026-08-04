@@ -104,12 +104,12 @@ public class Lane
     }
 
 
-    public void SettleBlock(FlyingBlock block)
+    public void SettleBlock(FlyingBlock block, int landingGridY)
     {
         foreach (var cell in block.Piece.Cells)
         {
             int x = block.X + cell.X;
-            int y = block.GridY + cell.Y;
+            int y = landingGridY + cell.Y;
 
             if (y < 0 || y >= Height)
                 continue;
