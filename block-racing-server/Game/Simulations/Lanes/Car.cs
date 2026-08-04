@@ -3,8 +3,8 @@ namespace block_racing_server.Game.Simulations.Lanes;
 
 public class Car
 {
-    public const int Width = 2;
-    public const int Height = 1;
+    public const int Width = 1;
+    public const int Height = 2;
 
     public int X { get; private set; } = 2;
 

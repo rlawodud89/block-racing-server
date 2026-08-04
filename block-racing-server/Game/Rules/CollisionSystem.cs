@@ -20,21 +20,23 @@ public class CollisionSystem
         Car car = player.Car;
         Lane lane = player.Lane;
 
-
         if (car.IsInvincible)
             return;
 
-        int y = 0;
-
-        for (int x = car.X;
-            x < car.X + Car.Width;
-            x++)
+        for (int y = 0; y < Car.Height; y++)
         {
-            if (lane.HasBlock(x, y))
+            for (int x = 0; x < Car.Width; x++)
             {
-                player.Car.OnCollision();
-                return;
+                int gridX = car.X + x;
+                int gridY = y;
+
+                if (lane.HasBlock(gridX, gridY))
+                {
+                    car.OnCollision();
+                    return;
+                }
             }
         }
     }
+
 }

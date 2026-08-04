@@ -268,7 +268,7 @@ public class GameSimulation
             new FlyingBlock(
                 piece,
                 player.Car.X,
-                0,
+                Car.Height,
                 player.Id
             );
 
