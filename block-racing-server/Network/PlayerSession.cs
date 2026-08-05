@@ -68,7 +68,7 @@ public class PlayerSession
         }
         finally
         {
-            Disconnect();
+            await Disconnect();
         }
     }
 
@@ -99,12 +99,12 @@ public class PlayerSession
         await _stream.WriteAsync(writer.ToArray());
     }
 
-    private void Disconnect()
+    private async Task Disconnect()
     {
-        _gameManager.UnregisterPlayer(Player);
+        if (Player != null)
+            await _gameManager.UnregisterPlayer(Player);
 
         _sessionManager.Remove(this);
-
 
         _stream.Close();
         _client.Close();
@@ -130,6 +130,7 @@ public class PlayerSession
     {
         if (Player == null)
             return;
+
         if (isMatch)
         {
             _gameManager.EnqueueMatch(Player);

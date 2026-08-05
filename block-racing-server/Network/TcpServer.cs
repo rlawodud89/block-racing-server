@@ -63,17 +63,25 @@ public class TcpServer
     {
         var tick = TimeSpan.FromMilliseconds(50);
 
-        while (!token.IsCancellationRequested)
+        try
         {
-            var start = DateTime.UtcNow;
+            while (!token.IsCancellationRequested)
+            {
+                var start = DateTime.UtcNow;
 
-            await _gameManager.Update();
+                await _gameManager.Update();
 
-            var elapsed = DateTime.UtcNow - start;
+                var elapsed = DateTime.UtcNow - start;
+                var delay = tick - elapsed;
 
-            var delay = tick - elapsed;
-            if (delay > TimeSpan.Zero)
-                await Task.Delay(delay);
+                if (delay > TimeSpan.Zero)
+                    await Task.Delay(delay, token);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("[GAME LOOP CRASHED]");
+            Console.WriteLine(ex);
         }
     }
 }
