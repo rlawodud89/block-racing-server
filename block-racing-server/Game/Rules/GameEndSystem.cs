@@ -1,5 +1,6 @@
 ﻿using block_racing_server.Game.Players;
 using block_racing_server.Game.Simulations;
+using block_racing_common.Game.Enums;
 
 namespace block_racing_server.Game.Rules;
 
@@ -20,7 +21,8 @@ public class GameEndSystem
         if (finishedPlayers.Length == 2)
             return new GameEndResult(
                 winner: null,
-                loser: null
+                loser: null,
+                reason: GameEndReason.Normal
             );
 
         // 한 명만 결승선 도달
@@ -31,7 +33,8 @@ public class GameEndSystem
 
         return new GameEndResult(
             winner,
-            loser
+            loser,
+            GameEndReason.Normal
         );
     }
 }

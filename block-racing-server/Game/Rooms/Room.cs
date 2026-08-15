@@ -103,7 +103,8 @@ public class Room
                     await EndGame(
                         new GameEndResult(
                             winner: remain,
-                            loser: player
+                            loser: player,
+                            reason: GameEndReason.OpponentDisconnected
                         )
                     );
 
@@ -251,7 +252,8 @@ public class Room
 
             var packet = new S_GameEndPacket
             {
-                Result = gameResult
+                Result = gameResult,
+                Reason = result.Reason
             };
 
             await player.Session.SendAsync(packet);

@@ -11,7 +11,7 @@ public static class PlayerSnapshotBuilder
             player.Id,
             player.Car.X,
             player.Car.Distance,
-            player.Car.Speed,
+            player.Car.CurrentSpeed,
             player.Car.IsStunned,
             player.Mode,
             player.CurrentPiece?.Type,
