@@ -55,7 +55,7 @@ public class Car
 
     public void MoveRight()
     {
-        if (X + Width <= Lane.Width)
+        if (X + Width < Lane.Width)
             X++;
     }
 
