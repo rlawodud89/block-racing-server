@@ -361,3 +361,28 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Environment / Secrets
+.env
+.env.*
+!.env.example
+
+# Local configuration
+appsettings.Local.json
+appsettings.Development.json
+appsettings.Production.json
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# AWS / SSH keys
+*.pem
+*.ppk
+
+# OS files
+.DS_Store
+Thumbs.db
