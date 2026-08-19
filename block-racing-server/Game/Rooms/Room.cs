@@ -54,7 +54,7 @@ public class Room
         {
             State = RoomState.Ready;
 
-            var packet = new S_MatchFoundPacket
+            var packet = new S_RoomReadyPacket
             {
                 RoomId = Id
             };
@@ -94,7 +94,7 @@ public class Room
             case RoomState.Ready:
             case RoomState.Starting:
                 {
-                    var packet = new S_MatchCanceledPacket();
+                    var packet = new S_GameCanceledPacket();
 
                     await remain.Session.SendAsync(packet);
 
