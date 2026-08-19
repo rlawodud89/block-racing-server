@@ -140,6 +140,30 @@ public class PlayerSession
             _gameManager.CancelMatch(Player);
         }
     }
+
+    public async Task OnCreateRoom()
+    {
+        if (Player == null)
+            return;
+
+        await _gameManager.CreateRoom(Player);
+    }
+
+    public async Task OnJoinRoom(string roomCode)
+    {
+        if (Player == null)
+            return;
+
+        await _gameManager.JoinRoom(Player, roomCode);
+    }
+
+    public async Task OnLeaveRoom()
+    {
+        if (Player == null)
+            return;
+
+        await _gameManager.LeaveRoom(Player);
+    }
 }
 
 

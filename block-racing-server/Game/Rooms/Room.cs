@@ -13,6 +13,7 @@ public class Room
 {
     public int Id { get; }
 
+
     public RoomState State { get; private set; } = RoomState.Waiting;
 
     private readonly List<Player> _players = new();
@@ -33,33 +34,39 @@ public class Room
 
     public async Task<bool> AddPlayer(Player player)
     {
+        if (State != RoomState.Waiting)
+            return false;
+
         if (_players.Count >= 2)
             return false;
 
         if (player.Room != null)
             return false;
 
-        if (player.MatchState != MatchState.Matching)
-            return false;
-
-        Console.WriteLine($"Room {Id}: Player {player.Id} added");
-
         _players.Add(player);
+
         player.Room = this;
+        player.MatchState = MatchState.InRoom;
 
         _readyMap[player.Id] = false;
 
         if (_players.Count == 2)
         {
             State = RoomState.Ready;
+
+            var packet = new S_RoomReadyPacket
+            {
+                RoomId = Id
+            };
+            PacketWriter writer = new((ushort)packet.PacketId);
+            packet.Write(writer);
+            byte[] bytes = writer.ToArray();
+
+            foreach (Player p in _players)
+            {
+                await p.Session.SendAsync(bytes);
+            }
         }
-
-        var packet = new S_MatchFoundPacket
-        {
-            RoomId = Id
-        };
-
-        await player.Session.SendAsync(packet);
 
         return true;
     }
@@ -87,7 +94,7 @@ public class Room
             case RoomState.Ready:
             case RoomState.Starting:
                 {
-                    var packet = new S_MatchCanceledPacket();
+                    var packet = new S_GameCanceledPacket();
 
                     await remain.Session.SendAsync(packet);
 

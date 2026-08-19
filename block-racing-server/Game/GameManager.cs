@@ -1,4 +1,5 @@
-﻿using block_racing_server.Game.Matchs;
+﻿using block_racing_common.Network.Packets;
+using block_racing_server.Game.Matchs;
 using block_racing_server.Game.Players;
 using block_racing_server.Game.Rooms;
 
@@ -67,5 +68,94 @@ public class GameManager
     public void CancelMatch(Player player)
     {
         _matchMaker.Cancel(player);
+    }
+
+    public async Task CreateRoom(Player player)
+    {
+        if (player == null)
+            return;
+
+        if (player.Room != null ||
+            player.MatchState != MatchState.None)
+            return;
+
+        Room room = _roomManager.CreateRoom();
+
+        string roomCode = _roomManager.RegisterRoomCode(room);
+
+        bool added = await room.AddPlayer(player);
+
+        if (!added)
+        {
+            _roomManager.RemoveRoom(room.Id);
+            return;
+        }
+
+        var packet = new S_RoomCreatedPacket
+        {
+            Success = true,
+            RoomId = room.Id,
+            RoomCode = roomCode
+        };
+
+        await player.Session.SendAsync(packet);
+    }
+
+    public async Task JoinRoom(Player player, string roomCode)
+    {
+        if (player == null)
+            return;
+
+        if (player.Room != null ||
+            player.MatchState != MatchState.None)
+            return;
+
+        roomCode = roomCode.Trim().ToUpperInvariant();
+
+        Room? room = _roomManager.Find(roomCode);
+
+        if (room == null)
+        {
+            await player.Session.SendAsync(
+                new S_RoomJoinedPacket
+                {
+                    Success = false,
+                    RoomId = 0
+                });
+
+            return;
+        }
+
+        bool added = await room.AddPlayer(player);
+
+        if (!added)
+        {
+            await player.Session.SendAsync(
+                new S_RoomJoinedPacket
+                {
+                    Success = false,
+                    RoomId = room.Id
+                });
+
+            return;
+        }
+
+        await player.Session.SendAsync(
+            new S_RoomJoinedPacket
+            {
+                Success = true,
+                RoomId = room.Id
+            });
+    }
+
+    public async Task LeaveRoom(Player player)
+    {
+        if (player == null)
+            return;
+
+        if (player.Room == null)
+            return;
+
+        await player.Room.RemovePlayerAsync(player);
     }
 }
