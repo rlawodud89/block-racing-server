@@ -17,6 +17,7 @@ public class PacketManager
         Register<C_InputPacket>(PacketId.C_Input, C_InputHandler.Handle);
         Register<C_CreateRoomPacket>(PacketId.C_CreateRoom, C_CreateRoomHandler.Handle);
         Register<C_JoinRoomPacket>(PacketId.C_JoinRoom, C_JoinRoomHandler.Handle);
+        Register<C_LeaveRoomPacket>(PacketId.C_LeaveRoom, C_LeaveRoomHandler.Handle);
     }
 
     public void Register<T>(

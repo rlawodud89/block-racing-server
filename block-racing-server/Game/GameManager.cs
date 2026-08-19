@@ -83,7 +83,7 @@ public class GameManager
 
         string roomCode = _roomManager.RegisterRoomCode(room);
 
-        bool added = room.AddPlayer(player);
+        bool added = await room.AddPlayer(player);
 
         if (!added)
         {
@@ -126,7 +126,7 @@ public class GameManager
             return;
         }
 
-        bool added = room.AddPlayer(player);
+        bool added = await room.AddPlayer(player);
 
         if (!added)
         {
@@ -146,5 +146,16 @@ public class GameManager
                 Success = true,
                 RoomId = room.Id
             });
+    }
+
+    public async Task LeaveRoom(Player player)
+    {
+        if (player == null)
+            return;
+
+        if (player.Room == null)
+            return;
+
+        await player.Room.RemovePlayerAsync(player);
     }
 }

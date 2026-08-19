@@ -32,7 +32,7 @@ public class Room
 
     public IReadOnlyList<Player> Players => _players;
 
-    public bool AddPlayer(Player player)
+    public async Task<bool> AddPlayer(Player player)
     {
         if (State != RoomState.Waiting)
             return false;
@@ -43,12 +43,8 @@ public class Room
         if (player.Room != null)
             return false;
 
-        //if (player.MatchState != MatchState.Matching)
-        //    return false;
-
-        Console.WriteLine($"Room {Id}: Player {player.Id} added");
-
         _players.Add(player);
+
         player.Room = this;
         player.MatchState = MatchState.InRoom;
 
@@ -57,14 +53,20 @@ public class Room
         if (_players.Count == 2)
         {
             State = RoomState.Ready;
+
+            var packet = new S_MatchFoundPacket
+            {
+                RoomId = Id
+            };
+            PacketWriter writer = new((ushort)packet.PacketId);
+            packet.Write(writer);
+            byte[] bytes = writer.ToArray();
+
+            foreach (Player p in _players)
+            {
+                await p.Session.SendAsync(bytes);
+            }
         }
-
-        //var packet = new S_MatchFoundPacket
-        //{
-        //    RoomId = Id
-        //};
-
-        //await player.Session.SendAsync(packet);
 
         return true;
     }

@@ -116,8 +116,8 @@ public class MatchMaker
 
         var room = _roomManager.CreateRoom();
 
-        bool addedP1 = room.AddPlayer(p1);
-        bool addedP2 = room.AddPlayer(p2);
+        bool addedP1 = await room.AddPlayer(p1);
+        bool addedP2 = await room.AddPlayer(p2);
 
         if (!addedP1 || !addedP2)
         {
@@ -131,17 +131,6 @@ public class MatchMaker
 
             return;
         }
-
-        //p1.MatchState = MatchState.InRoom;
-        //p2.MatchState = MatchState.InRoom;
-
-        var packet = new S_MatchFoundPacket
-        {
-            RoomId = room.Id
-        };
-
-        await p1.Session.SendAsync(packet);
-        await p2.Session.SendAsync(packet);
     }
 
     private bool TryReserve(Player player)

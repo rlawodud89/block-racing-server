@@ -156,6 +156,14 @@ public class PlayerSession
 
         await _gameManager.JoinRoom(Player, roomCode);
     }
+
+    public async Task OnLeaveRoom()
+    {
+        if (Player == null)
+            return;
+
+        await _gameManager.LeaveRoom(Player);
+    }
 }
 
 
