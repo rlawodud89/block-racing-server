@@ -1,4 +1,5 @@
-﻿using block_racing_server.Game.Matchs;
+﻿using block_racing_common.Network.Packets;
+using block_racing_server.Game.Matchs;
 using block_racing_server.Game.Players;
 using block_racing_server.Game.Rooms;
 using System.Collections.Concurrent;
@@ -87,11 +88,6 @@ public class MatchMaker
 
     public async Task TryMatch()
     {
-        //Console.WriteLine(
-        //$"[MATCH] CHECK " +
-        //$"{string.Join(", ", _players.Values.Select(
-        //    p => $"{p.Id}:{p.MatchState}"))}");
-
         var candidates = _players.Values
             .Where(p => p.MatchState == MatchState.Queued)
             .Take(2)
@@ -101,10 +97,13 @@ public class MatchMaker
             return;
 
         Console.WriteLine(
-        $"[MATCH] FOUND {candidates[0].Id} vs {candidates[1].Id}");
+        $"[MATCH] TRY MATCH Candidates={candidates.Count}");
 
         var p1 = candidates[0];
         var p2 = candidates[1];
+
+        Console.WriteLine(
+       $"[MATCH] FOUND {candidates[0].Id} vs {candidates[1].Id}");
 
         if (!TryReserve(p1))
             return;
@@ -117,8 +116,8 @@ public class MatchMaker
 
         var room = _roomManager.CreateRoom();
 
-        bool addedP1 = await room.AddPlayer(p1);
-        bool addedP2 = await room.AddPlayer(p2);
+        bool addedP1 = room.AddPlayer(p1);
+        bool addedP2 = room.AddPlayer(p2);
 
         if (!addedP1 || !addedP2)
         {
@@ -133,8 +132,16 @@ public class MatchMaker
             return;
         }
 
-        p1.MatchState = MatchState.InRoom;
-        p2.MatchState = MatchState.InRoom;
+        //p1.MatchState = MatchState.InRoom;
+        //p2.MatchState = MatchState.InRoom;
+
+        var packet = new S_MatchFoundPacket
+        {
+            RoomId = room.Id
+        };
+
+        await p1.Session.SendAsync(packet);
+        await p2.Session.SendAsync(packet);
     }
 
     private bool TryReserve(Player player)

@@ -13,6 +13,7 @@ public class Room
 {
     public int Id { get; }
 
+
     public RoomState State { get; private set; } = RoomState.Waiting;
 
     private readonly List<Player> _players = new();
@@ -31,21 +32,25 @@ public class Room
 
     public IReadOnlyList<Player> Players => _players;
 
-    public async Task<bool> AddPlayer(Player player)
+    public bool AddPlayer(Player player)
     {
+        if (State != RoomState.Waiting)
+            return false;
+
         if (_players.Count >= 2)
             return false;
 
         if (player.Room != null)
             return false;
 
-        if (player.MatchState != MatchState.Matching)
-            return false;
+        //if (player.MatchState != MatchState.Matching)
+        //    return false;
 
         Console.WriteLine($"Room {Id}: Player {player.Id} added");
 
         _players.Add(player);
         player.Room = this;
+        player.MatchState = MatchState.InRoom;
 
         _readyMap[player.Id] = false;
 
@@ -54,12 +59,12 @@ public class Room
             State = RoomState.Ready;
         }
 
-        var packet = new S_MatchFoundPacket
-        {
-            RoomId = Id
-        };
+        //var packet = new S_MatchFoundPacket
+        //{
+        //    RoomId = Id
+        //};
 
-        await player.Session.SendAsync(packet);
+        //await player.Session.SendAsync(packet);
 
         return true;
     }

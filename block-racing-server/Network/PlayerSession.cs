@@ -141,7 +141,7 @@ public class PlayerSession
         }
     }
 
-    public void OnCreateRoom()
+    public async Task OnCreateRoom()
     {
         if (Player == null)
             return;
@@ -149,7 +149,7 @@ public class PlayerSession
         await _gameManager.CreateRoom(Player);
     }
 
-    public void OnJoinRoom(string roomCode)
+    public async Task OnJoinRoom(string roomCode)
     {
         if (Player == null)
             return;

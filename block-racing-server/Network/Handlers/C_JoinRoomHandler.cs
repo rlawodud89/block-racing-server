@@ -12,6 +12,6 @@ public static class C_JoinRoomHandler
             return;
         }
 
-        session.OnJoinRoom(packet.RoomCode);
+        _ = session.OnJoinRoom(packet.RoomCode);
     }
 }
