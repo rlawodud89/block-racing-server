@@ -140,6 +140,22 @@ public class PlayerSession
             _gameManager.CancelMatch(Player);
         }
     }
+
+    public void OnCreateRoom()
+    {
+        if (Player == null)
+            return;
+
+        await _gameManager.CreateRoom(Player);
+    }
+
+    public void OnJoinRoom(string roomCode)
+    {
+        if (Player == null)
+            return;
+
+        await _gameManager.JoinRoom(Player, roomCode);
+    }
 }
 
 
