@@ -2,9 +2,9 @@
 
 namespace block_racing_server.Network.Handlers;
 
-public static class C_LeaveRoomHandler
+public static class C_CloseRoomHandler
 {
-    public static void Handle(PlayerSession session, C_LeaveRoomPacket packet)
+    public static void Handle(PlayerSession session, C_CloseRoomPacket packet)
     {
         if (session.Player == null)
             return;
