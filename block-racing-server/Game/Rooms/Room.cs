@@ -219,7 +219,7 @@ public class Room
 
         if (result != null)
         {
-            await EndGame(result);
+            await HandleGameEndAsync(result);
             return;
         }
 
@@ -290,14 +290,18 @@ public class Room
 
             await player.Session.SendAsync(packet);
         }
+    }
 
-        // Player는 Room에 그대로 유지
-        // 재매칭 또는 나가기 선택을 기다림
+    private async Task HandleGameEndAsync(GameEndResult result)
+    {
+        await EndGame(result);
 
         ResetRematchState();
 
         State = RoomState.Result;
     }
+
+
 
     public void RequestRematch(Player player)
     {
