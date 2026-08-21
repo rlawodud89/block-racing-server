@@ -19,6 +19,7 @@ public class Room
     private readonly List<Player> _players = new();
 
     private readonly Dictionary<int, bool> _readyMap = new();
+    private readonly Dictionary<int, bool> _rematchMap = new();
 
     private readonly object _lock = new();
 
@@ -49,23 +50,13 @@ public class Room
         player.MatchState = MatchState.InRoom;
 
         _readyMap[player.Id] = false;
+        _rematchMap[player.Id] = false;
 
         if (_players.Count == 2)
         {
             State = RoomState.Ready;
 
-            var packet = new S_RoomReadyPacket
-            {
-                RoomId = Id
-            };
-            PacketWriter writer = new((ushort)packet.PacketId);
-            packet.Write(writer);
-            byte[] bytes = writer.ToArray();
-
-            foreach (Player p in _players)
-            {
-                await p.Session.SendAsync(bytes);
-            }
+            await SendRoomReadyAsync();
         }
 
         return true;
@@ -77,13 +68,14 @@ public class Room
             return false;
 
         _readyMap.Remove(player.Id);
+        _rematchMap.Remove(player.Id);
 
         player.Room = null;
         player.MatchState = MatchState.None;
 
         if (_players.Count == 0)
         {
-            State = RoomState.Ended;
+            State = RoomState.Closing;
             return true;
         }
 
@@ -101,7 +93,7 @@ public class Room
                     remain.Room = null;
                     remain.MatchState = MatchState.None;
 
-                    State = RoomState.Ended;
+                    State = RoomState.Closing;
                     break;
                 }
 
@@ -115,12 +107,33 @@ public class Room
                         )
                     );
 
+                    remain.Room = null;
+                    remain.MatchState = MatchState.None;
+
+                    State = RoomState.Closing;
+
+                    break;
+                }
+
+            case RoomState.Result:
+                {
+                    // 상대가 나갔음을 알림
+                    var packet = new S_OpponentExitPacket();
+
+                    await remain.Session.SendAsync(packet);
+
+                    remain.Room = null;
+                    remain.MatchState = MatchState.None;
+
+                    State = RoomState.Closing;
                     break;
                 }
         }
 
         return true;
     }
+
+
 
     public void SetReady(Player player)
     {
@@ -181,8 +194,12 @@ public class Room
     {
         await Task.Delay(TimeSpan.FromSeconds(seconds));
 
+        if (State != RoomState.Starting)
+            return;
+
         State = RoomState.Playing;
     }
+
 
     public async Task Update()
     {
@@ -202,7 +219,7 @@ public class Room
 
         if (result != null)
         {
-            await EndGame(result);
+            await HandleGameEndAsync(result);
             return;
         }
 
@@ -232,6 +249,14 @@ public class Room
             await player.Session.SendAsync(bytes);
         }
     }
+
+    public void EnqueueInput(Player player, InputType type)
+    {
+        _simulation?.EnqueueInput(
+            new PlayerInputCommand(player, type)
+        );
+    }
+
 
     private async Task EndGame(GameEndResult result)
     {
@@ -265,22 +290,88 @@ public class Room
 
             await player.Session.SendAsync(packet);
         }
-
-        // 게임 종료 후 플레이어를 다시 매칭 가능한 상태로 변경
-        foreach (Player player in _players)
-        {
-            player.Room = null;
-            player.MatchState = MatchState.None;
-        }
-
-        State = RoomState.Ended;
     }
 
-    public void EnqueueInput(Player player, InputType type)
+    private async Task HandleGameEndAsync(GameEndResult result)
     {
-        _simulation?.EnqueueInput(
-            new PlayerInputCommand(player, type)
-        );
+        await EndGame(result);
+
+        ResetRematchState();
+
+        State = RoomState.Result;
+    }
+
+
+
+    public void RequestRematch(Player player)
+    {
+        bool shouldRestart = false;
+
+        lock (_lock)
+        {
+            if (State != RoomState.Result)
+                return;
+
+            if (!_players.Contains(player))
+                return;
+
+            _rematchMap[player.Id] = true;
+
+            if (_rematchMap.Values.All(v => v))
+            {
+                State = RoomState.Ready;
+                shouldRestart = true;
+            }
+        }
+
+        if (shouldRestart)
+        {
+            _ = RestartRoomAsync();
+        }
+    }
+
+    private async Task RestartRoomAsync()
+    {
+        ResetReadyState();
+        ResetRematchState();
+
+        await SendRoomReadyAsync();
+    }
+
+
+
+    private void ResetReadyState()
+    {
+        foreach (Player player in _players)
+        {
+            _readyMap[player.Id] = false;
+        }
+    }
+
+    private void ResetRematchState()
+    {
+        foreach (Player player in _players)
+        {
+            _rematchMap[player.Id] = false;
+        }
+    }
+
+    private async Task SendRoomReadyAsync()
+    {
+        var packet = new S_RoomReadyPacket
+        {
+            RoomId = Id
+        };
+
+        PacketWriter writer = new((ushort)packet.PacketId);
+        packet.Write(writer);
+
+        byte[] bytes = writer.ToArray();
+
+        foreach (Player player in _players)
+        {
+            await player.Session.SendAsync(bytes);
+        }
     }
 
 }

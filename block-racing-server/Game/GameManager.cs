@@ -28,7 +28,7 @@ public class GameManager
 
         foreach (Room room in rooms)
         {
-            if (room.State == RoomState.Ended)
+            if (room.State == RoomState.Closing)
             {
                 _roomManager.RemoveRoom(room.Id);
             }
