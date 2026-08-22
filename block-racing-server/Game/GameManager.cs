@@ -1,4 +1,5 @@
 ﻿using block_racing_common.Network.Packets;
+using block_racing_common.Game.Enums;
 using block_racing_server.Game.Matchs;
 using block_racing_server.Game.Players;
 using block_racing_server.Game.Rooms;
@@ -75,9 +76,28 @@ public class GameManager
         if (player == null)
             return;
 
-        if (player.Room != null ||
-            player.MatchState != MatchState.None)
+        if (player.Room != null)
+        {
+            await player.Session.SendAsync(
+                new S_RoomCreatedPacket
+                {
+                    Result = RoomCreateResult.AlreadyInRoom
+                });
+
             return;
+        }
+
+        if (player.MatchState != MatchState.None)
+        {
+            await player.Session.SendAsync(
+                new S_RoomCreatedPacket
+                {
+                    Result = RoomCreateResult.AlreadyQueued
+                });
+
+            return;
+        }
+
 
         Room room = _roomManager.CreateRoom();
 
@@ -88,17 +108,24 @@ public class GameManager
         if (!added)
         {
             _roomManager.RemoveRoom(room.Id);
+
+            await player.Session.SendAsync(
+                new S_RoomCreatedPacket
+                {
+                    Result = RoomCreateResult.UnknownError
+                });
+
             return;
         }
 
-        var packet = new S_RoomCreatedPacket
-        {
-            Success = true,
-            RoomId = room.Id,
-            RoomCode = roomCode
-        };
 
-        await player.Session.SendAsync(packet);
+        await player.Session.SendAsync(
+            new S_RoomCreatedPacket
+            {
+                Result = RoomCreateResult.Success,
+                RoomId = room.Id,
+                RoomCode = roomCode
+            });
     }
 
     public async Task JoinRoom(Player player, string roomCode)
@@ -106,9 +133,28 @@ public class GameManager
         if (player == null)
             return;
 
-        if (player.Room != null ||
-            player.MatchState != MatchState.None)
+        if (player.Room != null)
+        {
+            await player.Session.SendAsync(
+                new S_RoomJoinedPacket
+                {
+                    Result = RoomJoinResult.AlreadyInRoom
+                });
+
             return;
+        }
+
+        if (player.MatchState != MatchState.None)
+        {
+            await player.Session.SendAsync(
+                new S_RoomJoinedPacket
+                {
+                    Result = RoomJoinResult.AlreadyQueued
+                });
+
+            return;
+        }
+
 
         roomCode = roomCode.Trim().ToUpperInvariant();
 
@@ -119,8 +165,7 @@ public class GameManager
             await player.Session.SendAsync(
                 new S_RoomJoinedPacket
                 {
-                    Success = false,
-                    RoomId = 0
+                    Result = RoomJoinResult.RoomNotFound,
                 });
 
             return;
@@ -133,17 +178,17 @@ public class GameManager
             await player.Session.SendAsync(
                 new S_RoomJoinedPacket
                 {
-                    Success = false,
-                    RoomId = room.Id
+                    Result = RoomJoinResult.RoomFull,
                 });
 
             return;
         }
 
+
         await player.Session.SendAsync(
             new S_RoomJoinedPacket
             {
-                Success = true,
+                Result = RoomJoinResult.Success,
                 RoomId = room.Id
             });
     }
