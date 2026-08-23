@@ -21,6 +21,14 @@ public class PlayerSession
 
     private readonly GameManager _gameManager;
 
+    private DateTime _lastHeartbeatTime;
+    private DateTime _lastHeartbeatSendTime;
+
+    private const int HeartbeatInterval = 1000;
+    private const int HeartbeatTimeout = 5000;
+
+    private int _isDisconnected;
+
     public PlayerSession(TcpClient client, PacketManager packetManager, SessionManager sessionManager, GameManager gameManager)
     {
         _client = client;
@@ -30,6 +38,9 @@ public class PlayerSession
         _sessionManager = sessionManager;
         _receiveBuffer = new ReceiveBuffer();
         _gameManager = gameManager;
+
+        _lastHeartbeatTime = DateTime.UtcNow;
+        _lastHeartbeatSendTime = DateTime.UtcNow;
     }
 
 
@@ -68,7 +79,7 @@ public class PlayerSession
         }
         finally
         {
-            await Disconnect();
+            await DisconnectAsync();
         }
     }
 
@@ -99,8 +110,11 @@ public class PlayerSession
         await _stream.WriteAsync(writer.ToArray());
     }
 
-    private async Task Disconnect()
+    public async Task DisconnectAsync()
     {
+        if (Interlocked.Exchange(ref _isDisconnected, 1) == 1)
+            return;
+
         if (Player != null)
             await _gameManager.UnregisterPlayer(Player);
 
@@ -109,6 +123,32 @@ public class PlayerSession
         _stream.Close();
         _client.Close();
     }
+
+
+    public void UpdateHeartbeat()
+    {
+        _lastHeartbeatTime = DateTime.UtcNow;
+    }
+
+    public bool IsHeartbeatTimeout()
+    {
+        return DateTime.UtcNow - _lastHeartbeatTime
+            > TimeSpan.FromMilliseconds(HeartbeatTimeout);
+    }
+
+    public bool ShouldSendHeartbeat()
+    {
+        return DateTime.UtcNow - _lastHeartbeatSendTime
+            > TimeSpan.FromMilliseconds(HeartbeatInterval);
+    }
+
+    public async Task SendHeartbeatAsync()
+    {
+        _lastHeartbeatSendTime = DateTime.UtcNow;
+
+        await SendAsync(new S_HeartbeatPacket());
+    }
+
 
 
     public async Task OnLogin(string nickname)

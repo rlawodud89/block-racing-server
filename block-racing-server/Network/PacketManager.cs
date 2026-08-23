@@ -20,6 +20,7 @@ public class PacketManager
         Register<C_CloseRoomPacket>(PacketId.C_CloseRoom, C_CloseRoomHandler.Handle);
         Register<C_RematchReqeustPacket>(PacketId.C_RematchRequest, C_RematchRequestHandler.Handle);
         Register<C_ExitRoomPacket>(PacketId.C_ExitRoom, C_ExitRoomHandler.Handle);
+        Register<C_HeartbeatPacket>(PacketId.C_Heartbeat, C_HeartbeatHandler.Handle);
     }
 
     public void Register<T>(

@@ -69,6 +69,7 @@ public class TcpServer
             {
                 var start = DateTime.UtcNow;
 
+                await _sessionManager.UpdateAsync();
                 await _gameManager.Update();
 
                 var elapsed = DateTime.UtcNow - start;

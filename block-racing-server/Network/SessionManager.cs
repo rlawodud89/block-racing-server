@@ -50,4 +50,26 @@ public class SessionManager
             await session.SendAsync(data);
         }
     }
+
+    public async Task UpdateAsync()
+    {
+        foreach (var session in _sessions.Values)
+        {
+            if (session.IsHeartbeatTimeout())
+            {
+                Console.WriteLine(
+                    $"Heartbeat Timeout : {session.Id}"
+                );
+
+                await session.DisconnectAsync();
+
+                continue;
+            }
+
+            if (session.ShouldSendHeartbeat())
+            {
+                await session.SendHeartbeatAsync();
+            }
+        }
+    }
 }
