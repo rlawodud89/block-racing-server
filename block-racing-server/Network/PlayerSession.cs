@@ -22,6 +22,9 @@ public class PlayerSession
     private readonly GameManager _gameManager;
 
     private DateTime _lastHeartbeatTime;
+    private DateTime _lastHeartbeatSendTime;
+
+    private const int HeartbeatInterval = 1000;
     private const int HeartbeatTimeout = 5000;
 
     private int _isDisconnected;
@@ -37,6 +40,7 @@ public class PlayerSession
         _gameManager = gameManager;
 
         _lastHeartbeatTime = DateTime.UtcNow;
+        _lastHeartbeatSendTime = DateTime.UtcNow;
     }
 
 
@@ -120,6 +124,7 @@ public class PlayerSession
         _client.Close();
     }
 
+
     public void UpdateHeartbeat()
     {
         _lastHeartbeatTime = DateTime.UtcNow;
@@ -129,6 +134,19 @@ public class PlayerSession
     {
         return DateTime.UtcNow - _lastHeartbeatTime
             > TimeSpan.FromMilliseconds(HeartbeatTimeout);
+    }
+
+    public bool ShouldSendHeartbeat()
+    {
+        return DateTime.UtcNow - _lastHeartbeatSendTime
+            > TimeSpan.FromMilliseconds(HeartbeatInterval);
+    }
+
+    public async Task SendHeartbeatAsync()
+    {
+        _lastHeartbeatSendTime = DateTime.UtcNow;
+
+        await SendAsync(new S_HeartbeatPacket());
     }
 
 

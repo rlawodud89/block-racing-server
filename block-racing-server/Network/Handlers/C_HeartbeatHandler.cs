@@ -6,8 +6,8 @@ public static class C_HeartbeatHandler
 {
     public static void Handle(PlayerSession session, C_HeartbeatPacket packet)
     {
-        session.UpdateHeartbeat();
+        Console.WriteLine($"C_Heartbeat 수신 : {session.Id}");
 
-        _ = session.SendAsync(new S_HeartbeatPacket());
+        session.UpdateHeartbeat();
     }
 }

@@ -62,6 +62,13 @@ public class SessionManager
                 );
 
                 await session.DisconnectAsync();
+
+                continue;
+            }
+
+            if (session.ShouldSendHeartbeat())
+            {
+                await session.SendHeartbeatAsync();
             }
         }
     }
