@@ -25,9 +25,14 @@ public class GameState
     }
 
 
-    public void UpdateTick(float deltaTime)
+    public void SetTick(long currentTick)
     {
-        Tick++;
+        Tick = currentTick;
+    }
+
+    public void UpdateTick(long currentTick, float deltaTime)
+    {
+        Tick = currentTick;
         ElapsedTime += deltaTime;
     }
 

@@ -58,7 +58,12 @@ public class GameSimulation
         _inputQueue.Enqueue(command);
     }
 
-    public GameEndResult? Update(float deltaTime)
+    public void SetTick(long currentTick)
+    {
+        _gameState.SetTick(currentTick);
+    }
+
+    public GameEndResult? Update(long currentTick, float deltaTime)
     {
         try
         {
@@ -69,7 +74,7 @@ public class GameSimulation
             UpdateLineClear();
             UpdateLaneScroll(deltaTime);
             _collisionSystem.Update(Players);
-            _gameState.UpdateTick(deltaTime);
+            _gameState.UpdateTick(currentTick, deltaTime);
 
             GameEndResult? result = _gameEndSystem.Update(_gameState);
 

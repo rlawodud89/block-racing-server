@@ -11,6 +11,10 @@ public class GameManager
     public RoomManager _roomManager { get; }
     public MatchMaker _matchMaker { get; }
 
+    private long _currentTick;
+    public long CurrentTick => _currentTick;
+
+
     public GameManager(RoomManager roomManager)
     {
         _roomManager = roomManager;
@@ -19,12 +23,14 @@ public class GameManager
 
     public async Task Update()
     {
+        _currentTick++;
+
         await _matchMaker.TryMatch();
 
         var rooms = _roomManager.Rooms.ToList();
 
         await Task.WhenAll(
-            rooms.Select(room => room.Update())
+            rooms.Select(room => room.Update(_currentTick))
         );
 
         foreach (Room room in rooms)
