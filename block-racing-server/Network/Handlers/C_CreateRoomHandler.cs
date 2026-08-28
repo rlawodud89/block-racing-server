@@ -12,6 +12,6 @@ public static class C_CreateRoomHandler
             return;
         }
 
-        _ = session.OnCreateRoom();
+        _ = session.OnCreatePrivateRoom();
     }
 }

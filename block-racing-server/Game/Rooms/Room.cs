@@ -13,6 +13,8 @@ public class Room
 {
     public int Id { get; }
 
+    public string? Code { get; private set; }
+
 
     public RoomState State { get; private set; } = RoomState.Waiting;
 
@@ -32,9 +34,10 @@ public class Room
     private long _startTick;
 
 
-    public Room(int id)
+    public Room(int id, string? code = null)
     {
         Id = id;
+        Code = code;
     }
 
     public IReadOnlyList<Player> Players => _players;

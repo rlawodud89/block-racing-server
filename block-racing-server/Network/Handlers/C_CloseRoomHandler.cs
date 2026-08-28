@@ -9,6 +9,6 @@ public static class C_CloseRoomHandler
         if (session.Player == null)
             return;
 
-        _ = session.OnLeaveRoom();
+        _ = session.OnCloseRoom();
     }
 }

@@ -31,19 +31,37 @@ public class RoomManager
         return room;
     }
 
+    public Room? CreatePrivateRoom()
+    {
+        int id = Interlocked.Increment(ref _roomId);
+
+        while (true)
+        {
+            string roomCode = GenerateRoomCode();
+
+            if (!_roomCodes.TryAdd(roomCode, id))
+                continue;
+
+            var room = new Room(id, roomCode);
+
+            if (!_rooms.TryAdd(id, room))
+            {
+                _roomCodes.TryRemove(roomCode, out _);
+
+                return null;
+            }
+
+            return room;
+        }
+    }
+
     public bool RemoveRoom(int id)
     {
         if (!_rooms.TryRemove(id, out var room))
             return false;
 
-        foreach (var pair in _roomCodes)
-        {
-            if (pair.Value == id)
-            {
-                _roomCodes.TryRemove(pair.Key, out _);
-                break;
-            }
-        }
+        if (room.Code != null)
+            _roomCodes.TryRemove(room.Code, out _);
 
         return true;
     }
@@ -65,16 +83,6 @@ public class RoomManager
 
     public IEnumerable<Room> Rooms => _rooms.Values;
 
-    public string RegisterRoomCode(Room room)
-    {
-        while (true)
-        {
-            string roomCode = GenerateRoomCode();
-
-            if (_roomCodes.TryAdd(roomCode, room.Id))
-                return roomCode;
-        }
-    }
 
     private string GenerateRoomCode()
     {
