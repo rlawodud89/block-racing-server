@@ -5,10 +5,10 @@ namespace block_racing_server.Network;
 
 public class SessionManager
 {
-    private readonly ConcurrentDictionary<int, PlayerSession> _sessions
+    private readonly ConcurrentDictionary<long, PlayerSession> _sessions
         = new();
 
-    private int _idGenerator = 0;
+    private long _idGenerator = 0;
 
     public int Count => _sessions.Count;
 
@@ -16,9 +16,9 @@ public class SessionManager
         => _sessions.Values.ToArray();
 
 
-    public int Add(PlayerSession session)
+    public long Add(PlayerSession session)
     {
-        int id = Interlocked.Increment(ref _idGenerator);
+        long id = Interlocked.Increment(ref _idGenerator);
 
         session.Id = id;
 
@@ -36,7 +36,7 @@ public class SessionManager
         Console.WriteLine($"Session Remove : {session.Id}");
     }
 
-    public PlayerSession? Find(int id)
+    public PlayerSession? Find(long id)
     {
         _sessions.TryGetValue(id, out var session);
 

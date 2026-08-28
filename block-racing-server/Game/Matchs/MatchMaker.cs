@@ -6,7 +6,7 @@ using System.Collections.Concurrent;
 
 public class MatchMaker
 {
-    private readonly ConcurrentDictionary<int, Player> _players = new();
+    private readonly ConcurrentDictionary<long, Player> _players = new();
 
     private readonly RoomManager _roomManager;
 

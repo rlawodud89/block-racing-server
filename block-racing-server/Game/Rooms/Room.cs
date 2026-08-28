@@ -11,24 +11,33 @@ namespace block_racing_server.Game.Rooms;
 
 public class Room
 {
-    public int Id { get; }
+    public long Id { get; }
+
+    public string? Code { get; private set; }
 
 
     public RoomState State { get; private set; } = RoomState.Waiting;
 
     private readonly List<Player> _players = new();
 
-    private readonly Dictionary<int, bool> _readyMap = new();
-    private readonly Dictionary<int, bool> _rematchMap = new();
+    private readonly Dictionary<long, bool> _readyMap = new();
+    private readonly Dictionary<long, bool> _rematchMap = new();
 
     private readonly object _lock = new();
 
     private GameSimulation? _simulation;
 
+    private const float TickDeltaTime = 0.05f;
+    private const int CountdownTicks = 60; // 3초, 1초에 20 Tick
 
-    public Room(int id)
+    private long _currentTick;
+    private long _startTick;
+
+
+    public Room(long id, string? code = null)
     {
         Id = id;
+        Code = code;
     }
 
     public IReadOnlyList<Player> Players => _players;
@@ -173,49 +182,60 @@ public class Room
         _simulation = new GameSimulation(gameState);
         _simulation.Initialize();
 
+        _startTick = _currentTick + CountdownTicks;
+
         var packet = new S_StartGamePacket
         {
-            RoomId = Id
+            RoomId = Id,
+            StartTick = _startTick
         };
 
         PacketWriter writer = new((ushort)packet.PacketId);
         packet.Write(writer);
+
         byte[] bytes = writer.ToArray();
 
-        foreach (var player in _players)
+        foreach (Player player in _players)
         {
             await player.Session.SendAsync(bytes);
         }
-
-        _ = BeginAfterCountdown(packet.CountdownSeconds);
-    }
-
-    private async Task BeginAfterCountdown(float seconds)
-    {
-        await Task.Delay(TimeSpan.FromSeconds(seconds));
-
-        if (State != RoomState.Starting)
-            return;
-
-        State = RoomState.Playing;
     }
 
 
-    public async Task Update()
+    public async Task Update(long currentTick)
     {
-        if (State != RoomState.Playing)
-            return;
-
+        _currentTick = currentTick;
 
         if (_simulation == null)
             return;
 
+        if (State == RoomState.Starting)
+        {
+            if (currentTick < _startTick)
+            {
+                _simulation.SetTick(currentTick);
+
+                await Sync();
+                return;
+            }
+
+            State = RoomState.Playing;
+
+            Console.WriteLine(
+                $"Room {Id} GAME START " +
+                $"Tick={currentTick}");
+        }
+
+
+        if (State != RoomState.Playing)
+            return;
 
         if (_simulation.IsGameEnd)
             return;
 
 
-        GameEndResult? result = _simulation.Update(0.05f);
+        GameEndResult? result =
+            _simulation.Update(currentTick, TickDeltaTime);
 
         if (result != null)
         {
@@ -252,6 +272,9 @@ public class Room
 
     public void EnqueueInput(Player player, InputType type)
     {
+        if (State != RoomState.Playing)
+            return;
+
         _simulation?.EnqueueInput(
             new PlayerInputCommand(player, type)
         );

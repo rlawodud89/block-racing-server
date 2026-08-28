@@ -11,6 +11,10 @@ public class GameManager
     public RoomManager _roomManager { get; }
     public MatchMaker _matchMaker { get; }
 
+    private long _currentTick;
+    public long CurrentTick => _currentTick;
+
+
     public GameManager(RoomManager roomManager)
     {
         _roomManager = roomManager;
@@ -19,12 +23,14 @@ public class GameManager
 
     public async Task Update()
     {
+        _currentTick++;
+
         await _matchMaker.TryMatch();
 
         var rooms = _roomManager.Rooms.ToList();
 
         await Task.WhenAll(
-            rooms.Select(room => room.Update())
+            rooms.Select(room => room.Update(_currentTick))
         );
 
         foreach (Room room in rooms)
@@ -71,7 +77,7 @@ public class GameManager
         _matchMaker.Cancel(player);
     }
 
-    public async Task CreateRoom(Player player)
+    public async Task CreatePrivateRoom(Player player)
     {
         if (player == null)
             return;
@@ -99,9 +105,19 @@ public class GameManager
         }
 
 
-        Room room = _roomManager.CreateRoom();
+        Room? room = _roomManager.CreatePrivateRoom();
 
-        string roomCode = _roomManager.RegisterRoomCode(room);
+        if (room == null)
+        {
+            await player.Session.SendAsync(
+                new S_RoomCreatedPacket
+                {
+                    Result = RoomCreateResult.UnknownError
+                });
+
+            return;
+        }
+
 
         bool added = await room.AddPlayer(player);
 
@@ -124,7 +140,7 @@ public class GameManager
             {
                 Result = RoomCreateResult.Success,
                 RoomId = room.Id,
-                RoomCode = roomCode
+                RoomCode = room.Code
             });
     }
 

@@ -6,7 +6,7 @@ namespace block_racing_server.Game.Rules;
 public class CollisionSystem
 {
     public void Update(
-        IReadOnlyDictionary<int, Player> players)
+        IReadOnlyDictionary<long, Player> players)
     {
         foreach (Player player in players.Values)
         {

@@ -9,7 +9,7 @@ namespace block_racing_server.Game.Players;
 
 public class Player
 {
-    public int Id { get; set; }
+    public long Id { get; set; }
 
     public string NickName { get; set; } = string.Empty;
 
@@ -35,7 +35,7 @@ public class Player
 
     public PlayMode Mode { get; private set; }
 
-    public Player(PlayerSession session, int id, string nickname)
+    public Player(PlayerSession session, long id, string nickname)
     {
         Session = session;
         Id = id;

@@ -9,7 +9,7 @@ namespace block_racing_server.Network;
 
 public class PlayerSession
 {
-    public int Id { get; set; }
+    public long Id { get; set; }
     public Player? Player { get; private set; }
 
     private readonly TcpClient _client;
@@ -181,12 +181,12 @@ public class PlayerSession
         }
     }
 
-    public async Task OnCreateRoom()
+    public async Task OnCreatePrivateRoom()
     {
         if (Player == null)
             return;
 
-        await _gameManager.CreateRoom(Player);
+        await _gameManager.CreatePrivateRoom(Player);
     }
 
     public async Task OnJoinRoom(string roomCode)
@@ -197,7 +197,7 @@ public class PlayerSession
         await _gameManager.JoinRoom(Player, roomCode);
     }
 
-    public async Task OnLeaveRoom()
+    public async Task OnCloseRoom()
     {
         if (Player == null)
             return;

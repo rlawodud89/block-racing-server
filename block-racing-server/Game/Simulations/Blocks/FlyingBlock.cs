@@ -14,13 +14,13 @@ public class FlyingBlock
 
     public float MoveSpeed { get; }
 
-    public int OwnerId { get; }
+    public long OwnerId { get; }
 
     public bool IsFinished { get; private set; }
 
 
 
-    public FlyingBlock(BlockPiece piece, int x, float y, int ownerId)
+    public FlyingBlock(BlockPiece piece, int x, float y, long ownerId)
     {
         Piece = piece;
 
