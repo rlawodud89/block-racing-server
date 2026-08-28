@@ -147,11 +147,116 @@ public class GameSimulation
         {
             Lane lane = player.Lane;
 
-            List<(FlyingBlock Block, int LandingGridY)> landingBlocks = new();
+            List<FlyingBlock> activeBlocks =
+                lane.FlyingBlocks
+                    .Where(b => !b.IsFinished)
+                    .ToList();
 
-            // 1. 이번 Tick에 착지하는 FlyingBlock 확인
-            foreach (FlyingBlock block in lane.FlyingBlocks)
+            if (activeBlocks.Count == 0)
+                continue;
+
+
+            // ----------------------------------------
+            // 1. 현재 Grid 위치
+            // ----------------------------------------
+
+            Dictionary<FlyingBlock, int> currentGridYs =
+                activeBlocks.ToDictionary(
+                    block => block,
+                    block => block.GridY);
+
+
+            // ----------------------------------------
+            // 2. 이번 Tick의 다음 Grid 위치
+            // ----------------------------------------
+
+            Dictionary<FlyingBlock, int> nextGridYs =
+                activeBlocks.ToDictionary(
+                    block => block,
+                    block => (int)MathF.Floor(
+                        block.Y +
+                        block.MoveSpeed * deltaTime));
+
+
+            // ----------------------------------------
+            // 3. 현재 위치에서 Line Clear 검사
+            // ----------------------------------------
+
+            List<FlyingBlockPosition> currentPositions =
+                activeBlocks
+                    .Select(block =>
+                        new FlyingBlockPosition(
+                            block,
+                            currentGridYs[block]))
+                    .ToList();
+
+            int clearCount =
+                _lineClearSystem.TryClearLines(
+                    lane,
+                    currentPositions);
+
+            if (clearCount > 0)
             {
+                player.Car.AddLineClearSpeed(clearCount);
+            }
+
+
+            // ----------------------------------------
+            // 4. Tick 사이의 Grid 위치에서
+            //    Line Clear 검사
+            // ----------------------------------------
+
+            int maxSteps =
+                activeBlocks
+                    .Select(block =>
+                        nextGridYs[block] -
+                        currentGridYs[block])
+                    .DefaultIfEmpty(0)
+                    .Max();
+
+            for (int step = 1; step <= maxSteps; step++)
+            {
+                List<FlyingBlockPosition> positions =
+                    new();
+
+                foreach (FlyingBlock block in activeBlocks)
+                {
+                    if (block.IsFinished)
+                        continue;
+
+                    int gridY =
+                        Math.Min(
+                            currentGridYs[block] + step,
+                            nextGridYs[block]);
+
+                    positions.Add(
+                        new FlyingBlockPosition(
+                            block,
+                            gridY));
+                }
+
+                clearCount =
+                    _lineClearSystem.TryClearLines(
+                        lane,
+                        positions);
+
+                if (clearCount > 0)
+                {
+                    player.Car.AddLineClearSpeed(
+                        clearCount);
+                }
+            }
+
+
+            // ----------------------------------------
+            // 5. Line Clear 이후 착지 판정
+            // ----------------------------------------
+
+            foreach (FlyingBlock block in activeBlocks)
+            {
+                if (block.IsFinished)
+                    continue;
+
                 int? landingGridY =
                     CheckBlockCollision(
                         lane,
@@ -160,48 +265,28 @@ public class GameSimulation
 
                 if (landingGridY.HasValue)
                 {
-                    landingBlocks.Add(
-                        (block, landingGridY.Value));
-                }
-            }
+                    lane.SettleBlock(
+                        block,
+                        landingGridY.Value);
 
-            // 2. 착지하지 않는 FlyingBlock만 이동
-            foreach (FlyingBlock block in lane.FlyingBlocks)
-            {
-                bool isLanding =
-                    landingBlocks.Any(
-                        x => x.Block == block);
+                    block.Finish();
 
-                if (isLanding)
                     continue;
+                }
+
+
+                // ------------------------------------
+                // 6. 착지하지 않았다면 실제 이동
+                // ------------------------------------
 
                 block.MoveDown(deltaTime);
             }
 
-            // 3. 충돌한 FlyingBlock을 정확한 위치에 정착
-            foreach (var landing in landingBlocks)
-            {
-                FlyingBlock block = landing.Block;
-                int landingGridY = landing.LandingGridY;
 
-                Console.WriteLine(
-                    $"[Landing] " +
-                    $"Owner:{block.OwnerId}, " +
-                    $"OldY:{block.Y:F2}, " +
-                    $"CurrentGridY:{block.GridY}, " +
-                    $"LandingGridY:{landingGridY}");
+            // ----------------------------------------
+            // 7. 종료된 FlyingBlock 제거
+            // ----------------------------------------
 
-                lane.SettleBlock(
-                    block,
-                    landingGridY);
-
-                block.Finish();
-            }
-
-            // 4. FlyingBlock까지 포함해서 Line Clear 처리
-            _lineClearSystem.SettleBlocksCompletingLines(lane);
-
-            // 5. 정착된 FlyingBlock 제거
             lane.FlyingBlocks.RemoveAll(
                 b => b.IsFinished);
         }
@@ -222,7 +307,7 @@ public class GameSimulation
     {
         foreach (Player player in Players.Values)
         {
-            int clearCount = _lineClearSystem.ClearLines(player.Lane);
+            int clearCount = _lineClearSystem.TryClearLines(player.Lane);
 
             if (clearCount > 0)
             {
