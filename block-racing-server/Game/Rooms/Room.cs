@@ -11,7 +11,7 @@ namespace block_racing_server.Game.Rooms;
 
 public class Room
 {
-    public int Id { get; }
+    public long Id { get; }
 
     public string? Code { get; private set; }
 
@@ -20,8 +20,8 @@ public class Room
 
     private readonly List<Player> _players = new();
 
-    private readonly Dictionary<int, bool> _readyMap = new();
-    private readonly Dictionary<int, bool> _rematchMap = new();
+    private readonly Dictionary<long, bool> _readyMap = new();
+    private readonly Dictionary<long, bool> _rematchMap = new();
 
     private readonly object _lock = new();
 
@@ -34,7 +34,7 @@ public class Room
     private long _startTick;
 
 
-    public Room(int id, string? code = null)
+    public Room(long id, string? code = null)
     {
         Id = id;
         Code = code;

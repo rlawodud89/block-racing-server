@@ -12,10 +12,10 @@ public class GameState
 
     public bool IsGameEnd { get; private set; } = false;
 
-    private readonly Dictionary<int, Player> _players = new();
+    private readonly Dictionary<long, Player> _players = new();
 
 
-    public IReadOnlyDictionary<int, Player> Players
+    public IReadOnlyDictionary<long, Player> Players
         => _players;
 
 

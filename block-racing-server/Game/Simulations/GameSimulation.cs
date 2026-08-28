@@ -42,7 +42,7 @@ public class GameSimulation
         }
     }
 
-    private IReadOnlyDictionary<int, Player> Players
+    private IReadOnlyDictionary<long, Player> Players
         => _gameState.Players;
 
     public bool IsGameEnd

@@ -6,9 +6,9 @@ public class Block
 {
     public BlockType Type { get; }
 
-    public int OwnerId { get; }
+    public long OwnerId { get; }
 
-    public Block(BlockType type, int ownerId)
+    public Block(BlockType type, long ownerId)
     {
         Type = type;
         OwnerId = ownerId;

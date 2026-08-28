@@ -9,7 +9,7 @@ namespace block_racing_server.Network;
 
 public class PlayerSession
 {
-    public int Id { get; set; }
+    public long Id { get; set; }
     public Player? Player { get; private set; }
 
     private readonly TcpClient _client;

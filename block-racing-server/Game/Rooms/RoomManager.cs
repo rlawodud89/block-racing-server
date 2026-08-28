@@ -9,18 +9,18 @@ namespace block_racing_server.Game.Rooms;
 
 public class RoomManager
 {
-    private readonly ConcurrentDictionary<int, Room> _rooms = new();
+    private readonly ConcurrentDictionary<long, Room> _rooms = new();
 
-    private readonly ConcurrentDictionary<string, int> _roomCodes = new();
+    private readonly ConcurrentDictionary<string, long> _roomCodes = new();
 
-    private int _roomId = 0;
+    private long _roomId = 0;
 
     private const string RoomCodeChars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
     public Room CreateRoom()
     {
-        int id = Interlocked.Increment(ref _roomId);
+        long id = Interlocked.Increment(ref _roomId);
 
         var room = new Room(id);
 
@@ -33,7 +33,7 @@ public class RoomManager
 
     public Room? CreatePrivateRoom()
     {
-        int id = Interlocked.Increment(ref _roomId);
+        long id = Interlocked.Increment(ref _roomId);
 
         while (true)
         {
@@ -55,7 +55,7 @@ public class RoomManager
         }
     }
 
-    public bool RemoveRoom(int id)
+    public bool RemoveRoom(long id)
     {
         if (!_rooms.TryRemove(id, out var room))
             return false;
@@ -66,7 +66,7 @@ public class RoomManager
         return true;
     }
 
-    public Room? Find(int id)
+    public Room? Find(long id)
     {
         _rooms.TryGetValue(id, out var room);
 
@@ -75,7 +75,7 @@ public class RoomManager
 
     public Room? Find(string roomCode)
     {
-        if (!_roomCodes.TryGetValue(roomCode, out int roomId))
+        if (!_roomCodes.TryGetValue(roomCode, out long roomId))
             return null;
 
         return Find(roomId);
