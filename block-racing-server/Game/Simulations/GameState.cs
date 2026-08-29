@@ -8,7 +8,6 @@ public class GameState
 
     public float ElapsedTime { get; private set; }
 
-    public int TargetDistance { get; } = 50;
 
     public bool IsGameEnd { get; private set; } = false;
 

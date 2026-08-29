@@ -1,6 +1,7 @@
 ﻿using block_racing_server.Game.Players;
 using block_racing_server.Game.Simulations;
 using block_racing_common.Game.Enums;
+using block_racing_server.Data;
 
 namespace block_racing_server.Game.Rules;
 
@@ -10,7 +11,7 @@ public class GameEndSystem
     {
         Player[] finishedPlayers = gameState.Players.Values
             .Where(player =>
-                player.Car.Distance >= gameState.TargetDistance)
+                player.Car.Distance >= GameBalance.TargetDistance)
             .ToArray();
 
         // 아무도 결승선에 도달하지 않음
