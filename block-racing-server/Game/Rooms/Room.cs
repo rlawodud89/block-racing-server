@@ -6,6 +6,7 @@ using block_racing_common.Network;
 using block_racing_common.Network.Packets;
 using block_racing_common.Game.Snapshots;
 using block_racing_common.Game.Enums;
+using block_racing_server.Data;
 
 namespace block_racing_server.Game.Rooms;
 
@@ -187,7 +188,8 @@ public class Room
         var packet = new S_StartGamePacket
         {
             RoomId = Id,
-            StartTick = _startTick
+            StartTick = _startTick,
+            ShootCooldownTime = GameBalance.PieceCooldownTime
         };
 
         PacketWriter writer = new((ushort)packet.PacketId);
