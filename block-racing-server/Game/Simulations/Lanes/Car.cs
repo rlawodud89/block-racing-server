@@ -1,4 +1,6 @@
 ﻿
+using block_racing_server.Data;
+
 namespace block_racing_server.Game.Simulations.Lanes;
 
 public class Car
@@ -15,7 +17,7 @@ public class Car
         get
         {
             return IsStunned
-                ? Speed * 0.2f
+                ? Speed * GameBalance.StunnedSpeedMultiplier
                 : Speed;
         }
     }
@@ -28,19 +30,16 @@ public class Car
 
     public int StunRemainTick { get; private set; }
 
-    private const float Penalty = 1.0f;
-    private const float LineClearSpeedBonus = 0.05f;
-    private const float MaxSpeed = 3.0f;
 
-    public Car(float speed)
+    public Car()
     {
-        Speed = speed;
+        Speed = GameBalance.InitialCarSpeed;
     }
 
     public void Reset()
     {
         X = 2;
-        Speed = 1f;
+        Speed = GameBalance.InitialCarSpeed;
         Distance = 0f;
         IsStunned = false;
         IsInvincible = false;
@@ -74,10 +73,10 @@ public class Car
         IsStunned = false;
         IsInvincible = false;
 
-        Speed -= Penalty;
+        Speed -= GameBalance.CarSpeedPenalty;
 
-        if (Speed < 1f)
-            Speed = 1f;
+        if (Speed < GameBalance.InitialCarSpeed)
+            Speed = GameBalance.InitialCarSpeed;
     }
 
     public void OnCollision()
@@ -88,14 +87,14 @@ public class Car
         IsStunned = true;
         IsInvincible = true;
 
-        StunRemainTick = 40;
+        StunRemainTick = GameBalance.CarStunDurationTick;
     }
 
     public void AddLineClearSpeed(int lineCount)
     {
         Speed = MathF.Min(
-            Speed + lineCount * LineClearSpeedBonus,
-            MaxSpeed
+            Speed + lineCount * GameBalance.LineClearSpeedBonus,
+            GameBalance.CarMaxSpeed
         );
     }
 }

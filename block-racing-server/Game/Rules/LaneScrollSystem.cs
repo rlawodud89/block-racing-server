@@ -1,16 +1,15 @@
-﻿using block_racing_server.Game.Simulations.Lanes;
+﻿using block_racing_server.Data;
+using block_racing_server.Game.Simulations.Lanes;
 
 namespace block_racing_server.Game.Rules;
 
 
 public class LaneScrollSystem
 {
-    private const float BaseScrollSpeed = 3f;
-
 
     public void Update(Lane lane, float carSpeed, float deltaTime)
     {
-        lane.ScrollTimer += carSpeed * BaseScrollSpeed * deltaTime;
+        lane.ScrollTimer += carSpeed * GameBalance.BaseScrollSpeed * deltaTime;
 
         while (lane.ScrollTimer >= 1f)
         {

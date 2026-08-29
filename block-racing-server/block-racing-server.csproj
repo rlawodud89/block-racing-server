@@ -16,4 +16,11 @@
 		<ProjectReference Include="..\Common\block-racing-common.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<None Update="Config\game_balance.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</None>
+	</ItemGroup>
+
 </Project>

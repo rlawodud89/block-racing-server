@@ -1,4 +1,5 @@
-﻿using block_racing_server.Network;
+﻿using block_racing_server.Game.Data;
+using block_racing_server.Network;
 
 namespace block_racing_server;
 
@@ -8,6 +9,8 @@ public class Program
     {
         try
         {
+            GameBalanceLoader.Load();
+
             TcpServer server = new();
             await server.StartAsync(7777);
         }

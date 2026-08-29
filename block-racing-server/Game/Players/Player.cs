@@ -4,6 +4,7 @@ using block_racing_server.Game.Simulations.Blocks;
 using block_racing_server.Game.Simulations.Lanes;
 using block_racing_server.Network;
 using block_racing_common.Game.Enums;
+using block_racing_server.Data;
 
 namespace block_racing_server.Game.Players;
 
@@ -28,7 +29,6 @@ public class Player
 
     public float PieceCooldown { get; private set; }
 
-    private const float PieceCooldownTime = 1.5f;
 
 
     public Lane Lane { get; }
@@ -42,7 +42,7 @@ public class Player
         NickName = nickname;
 
         Lane = new Lane();
-        Car = new Car(1);
+        Car = new Car();
     }
 
     public void ResetGameState()
@@ -114,7 +114,7 @@ public class Player
         BlockPiece? piece = CurrentPiece;
 
         CurrentPiece = null;
-        PieceCooldown = PieceCooldownTime;
+        PieceCooldown = GameBalance.PieceCooldownTime;
 
         return piece;
     }

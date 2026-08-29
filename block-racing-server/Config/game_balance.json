@@ -1,0 +1,13 @@
+{
+  "initialCarSpeed": 1.0,
+  "carSpeedPenalty": 1.0,
+  "lineClearSpeedBonus": 0.05,
+  "carMaxSpeed": 3.0,
+  "carStunDurationTick": 40,
+  "stunnedSpeedMultiplier": 0.2,
+
+  "baseScrollSpeed": 3.0,
+
+  "pieceCooldownTime": 1.5,
+  "targetDistance": 50
+}
