@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,20 +14,32 @@ public class RoomManager
 
     private readonly ConcurrentDictionary<string, long> _roomCodes = new();
 
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly ILogger<RoomManager> _logger;
+
     private long _roomId = 0;
 
     private const string RoomCodeChars =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 
+    public RoomManager(ILoggerFactory loggerFactory)
+    {
+        _loggerFactory = loggerFactory;
+        _logger = loggerFactory.CreateLogger<RoomManager>();
+    }
+
     public Room CreateRoom()
     {
         long id = Interlocked.Increment(ref _roomId);
 
-        var room = new Room(id);
+        var room = new Room(id, _loggerFactory);
 
         _rooms.TryAdd(id, room);
 
-        Console.WriteLine($"Room {id} created.");
+        _logger.LogInformation(
+            "Room created. RoomId={RoomId} RoomCount={RoomCount}",
+            id,
+            _rooms.Count);
 
         return room;
     }
@@ -40,16 +53,35 @@ public class RoomManager
             string roomCode = GenerateRoomCode();
 
             if (!_roomCodes.TryAdd(roomCode, id))
-                continue;
+            {
+                _logger.LogDebug(
+                    "Room code collision detected. RoomCode={RoomCode}",
+                    roomCode);
 
-            var room = new Room(id, roomCode);
+                continue;
+            }
+
+
+            var room = new Room(id, _loggerFactory, roomCode);
 
             if (!_rooms.TryAdd(id, room))
             {
                 _roomCodes.TryRemove(roomCode, out _);
 
+                _logger.LogError(
+                    "Failed to add private room. RoomId={RoomId} RoomCode={RoomCode}",
+                    id,
+                    roomCode);
+
                 return null;
             }
+
+
+            _logger.LogInformation(
+                "Private room created. RoomId={RoomId} RoomCode={RoomCode} RoomCount={RoomCount}",
+                id,
+                roomCode,
+                _rooms.Count);
 
             return room;
         }
@@ -58,10 +90,24 @@ public class RoomManager
     public bool RemoveRoom(long id)
     {
         if (!_rooms.TryRemove(id, out var room))
+        {
+            _logger.LogWarning(
+                "Failed to remove room because room was not found. RoomId={RoomId}",
+                id);
+
             return false;
+        }
 
         if (room.Code != null)
+        {
             _roomCodes.TryRemove(room.Code, out _);
+        }
+
+        _logger.LogInformation(
+            "Room removed. RoomId={RoomId} RoomCode={RoomCode} RoomCount={RoomCount}",
+            id,
+            room.Code,
+            _rooms.Count);
 
         return true;
     }
@@ -76,7 +122,13 @@ public class RoomManager
     public Room? Find(string roomCode)
     {
         if (!_roomCodes.TryGetValue(roomCode, out long roomId))
+        {
+            _logger.LogDebug(
+                "Room not found by code. RoomCode={RoomCode}",
+                roomCode);
+
             return null;
+        }
 
         return Find(roomId);
     }

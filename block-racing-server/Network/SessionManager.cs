@@ -1,4 +1,5 @@
 ﻿using block_racing_common.Network;
+using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
 namespace block_racing_server.Network;
@@ -10,10 +11,17 @@ public class SessionManager
 
     private long _idGenerator = 0;
 
+    private readonly ILogger<SessionManager> _logger;
+
     public int Count => _sessions.Count;
 
     public IReadOnlyCollection<PlayerSession> Sessions
         => _sessions.Values.ToArray();
+
+    public SessionManager(ILoggerFactory loggerFactory)
+    {
+        _logger = loggerFactory.CreateLogger<SessionManager>();
+    }
 
 
     public long Add(PlayerSession session)
@@ -24,7 +32,10 @@ public class SessionManager
 
         _sessions.TryAdd(id, session);
 
-        Console.WriteLine($"Session Add : {id}");
+        _logger.LogInformation(
+            "Session added. SessionId={SessionId} SessionCount={SessionCount}",
+            id,
+            _sessions.Count);
 
         return id;
     }
@@ -33,7 +44,10 @@ public class SessionManager
     {
         _sessions.TryRemove(session.Id, out _);
 
-        Console.WriteLine($"Session Remove : {session.Id}");
+        _logger.LogInformation(
+            "Session removed. SessionId={SessionId} SessionCount={SessionCount}",
+            session.Id,
+            _sessions.Count);
     }
 
     public PlayerSession? Find(long id)
@@ -57,9 +71,9 @@ public class SessionManager
         {
             if (session.IsHeartbeatTimeout())
             {
-                Console.WriteLine(
-                    $"Heartbeat Timeout : {session.Id}"
-                );
+                _logger.LogWarning(
+                    "Heartbeat timeout. SessionId={SessionId}",
+                    session.Id);
 
                 await session.DisconnectAsync();
 

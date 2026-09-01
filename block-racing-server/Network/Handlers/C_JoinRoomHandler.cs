@@ -6,12 +6,6 @@ public static class C_JoinRoomHandler
 {
     public static void Handle(PlayerSession session, C_JoinRoomPacket packet)
     {
-        if (session.Player == null)
-        {
-            Console.WriteLine($"Player session {session.Id} has no player associated.");
-            return;
-        }
-
         _ = session.OnJoinRoom(packet.RoomCode);
     }
 }

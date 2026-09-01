@@ -1,10 +1,11 @@
-﻿using block_racing_server.Game.Players;
+﻿using block_racing_common.Game.Enums;
+using block_racing_common.Game.Snapshots;
+using block_racing_server.Game.Players;
 using block_racing_server.Game.Rules;
 using block_racing_server.Game.Simulations.Blocks;
 using block_racing_server.Game.Simulations.Lanes;
 using block_racing_server.Game.Snapshots;
-using block_racing_common.Game.Enums;
-using block_racing_common.Game.Snapshots;
+using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
 
 namespace block_racing_server.Game.Simulations;
@@ -13,6 +14,7 @@ public class GameSimulation
 {
     private readonly GameState _gameState;
 
+    private readonly ILogger<GameSimulation> _logger;
 
     private readonly ConcurrentQueue<PlayerInputCommand> _inputQueue
         = new();
@@ -27,9 +29,10 @@ public class GameSimulation
     private readonly GameEndSystem _gameEndSystem = new();
 
 
-    public GameSimulation(GameState gameState)
+    public GameSimulation(GameState gameState, ILoggerFactory loggerFactory)
     {
         _gameState = gameState;
+        _logger = loggerFactory.CreateLogger<GameSimulation>();
     }
 
     public void Initialize()
@@ -40,6 +43,10 @@ public class GameSimulation
 
             player.SetCurrentPiece(_pieceGenerator.Create());
         }
+
+        _logger.LogDebug(
+           "Game simulation initialized. PlayerCount={PlayerCount}",
+           Players.Count);
     }
 
     private IReadOnlyDictionary<long, Player> Players
@@ -86,7 +93,11 @@ public class GameSimulation
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"GameSimulation Update Error: {ex}");
+            _logger.LogError(
+               ex,
+               "Game simulation update failed. Tick={Tick}",
+               currentTick);
+
             throw;
         }
     }
@@ -98,27 +109,22 @@ public class GameSimulation
             switch (input.Type)
             {
                 case InputType.MoveLeft:
-                    Console.WriteLine($"Player {input.Player.Id} MoveLeft");
                     input.Player.MoveLeft();
                     break;
 
                 case InputType.MoveRight:
-                    Console.WriteLine($"Player {input.Player.Id} MoveRight");
                     input.Player.MoveRight();
                     break;
 
                 case InputType.ChangeMode:
-                    Console.WriteLine($"Player {input.Player.Id} ChangeMode");
                     input.Player.ChangeMode();
                     break;
 
                 case InputType.Shoot:
-                    Console.WriteLine($"Player {input.Player.Id} Shoot");
                     Shoot(input.Player);
                     break;
 
                 case InputType.Rotate:
-                    Console.WriteLine($"Player {input.Player.Id} Rotate");
                     input.Player.RotatePiece();
                     break;
             }

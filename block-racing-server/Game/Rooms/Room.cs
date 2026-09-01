@@ -1,12 +1,13 @@
-﻿using block_racing_server.Game.Matchs;
+﻿using block_racing_common.Game.Enums;
+using block_racing_common.Game.Snapshots;
+using block_racing_common.Network;
+using block_racing_common.Network.Packets;
+using block_racing_server.Data;
+using block_racing_server.Game.Matchs;
 using block_racing_server.Game.Players;
 using block_racing_server.Game.Rules;
 using block_racing_server.Game.Simulations;
-using block_racing_common.Network;
-using block_racing_common.Network.Packets;
-using block_racing_common.Game.Snapshots;
-using block_racing_common.Game.Enums;
-using block_racing_server.Data;
+using Microsoft.Extensions.Logging;
 
 namespace block_racing_server.Game.Rooms;
 
@@ -26,6 +27,9 @@ public class Room
 
     private readonly object _lock = new();
 
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly ILogger<Room> _logger;
+
     private GameSimulation? _simulation;
 
     private const float TickDeltaTime = 0.05f;
@@ -35,10 +39,13 @@ public class Room
     private long _startTick;
 
 
-    public Room(long id, string? code = null)
+    public Room(long id, ILoggerFactory loggerFactory, string? code = null)
     {
         Id = id;
         Code = code;
+
+        _loggerFactory = loggerFactory;
+        _logger = loggerFactory.CreateLogger<Room>();
     }
 
     public IReadOnlyList<Player> Players => _players;
@@ -46,13 +53,37 @@ public class Room
     public async Task<bool> AddPlayer(Player player)
     {
         if (State != RoomState.Waiting)
+        {
+            _logger.LogWarning(
+                "Failed to add player because room is not waiting. RoomId={RoomId} PlayerId={PlayerId} State={State}",
+                Id,
+                player.Id,
+                State);
+
             return false;
+        }
 
         if (_players.Count >= 2)
+        {
+            _logger.LogWarning(
+                "Failed to add player because room is full. RoomId={RoomId} PlayerId={PlayerId}",
+                Id,
+                player.Id);
+
             return false;
+        }
 
         if (player.Room != null)
+        {
+            _logger.LogWarning(
+                "Failed to add player because player is already in a room. RoomId={RoomId} PlayerId={PlayerId} ExistingRoomId={ExistingRoomId}",
+                Id,
+                player.Id,
+                player.Room.Id);
+
             return false;
+        }
+
 
         _players.Add(player);
 
@@ -62,12 +93,25 @@ public class Room
         _readyMap[player.Id] = false;
         _rematchMap[player.Id] = false;
 
+        _logger.LogInformation(
+            "Player added to room. RoomId={RoomId} PlayerId={PlayerId} PlayerCount={PlayerCount}",
+            Id,
+            player.Id,
+            _players.Count);
+
+
         if (_players.Count == 2)
         {
             State = RoomState.Ready;
 
+            _logger.LogInformation(
+               "Room is ready. RoomId={RoomId} PlayerCount={PlayerCount}",
+               Id,
+               _players.Count);
+
             await SendRoomReadyAsync();
         }
+
 
         return true;
     }
@@ -75,7 +119,20 @@ public class Room
     public async Task<bool> RemovePlayerAsync(Player player)
     {
         if (!_players.Remove(player))
+        {
+            _logger.LogWarning(
+                "Failed to remove player because player is not in room. RoomId={RoomId} PlayerId={PlayerId}",
+                Id,
+                player.Id);
+
             return false;
+        }
+
+        _logger.LogInformation(
+            "Player removed from room. RoomId={RoomId} PlayerId={PlayerId} State={State}",
+            Id,
+            player.Id,
+            State);
 
         _readyMap.Remove(player.Id);
         _rematchMap.Remove(player.Id);
@@ -86,6 +143,11 @@ public class Room
         if (_players.Count == 0)
         {
             State = RoomState.Closing;
+
+            _logger.LogInformation(
+                "Room is empty and closing. RoomId={RoomId}",
+                Id);
+
             return true;
         }
 
@@ -96,6 +158,12 @@ public class Room
             case RoomState.Ready:
             case RoomState.Starting:
                 {
+                    _logger.LogInformation(
+                        "Game canceled because opponent left. RoomId={RoomId} RemainingPlayerId={PlayerId} State={State}",
+                        Id,
+                        remain.Id,
+                        State);
+
                     var packet = new S_GameCanceledPacket();
 
                     await remain.Session.SendAsync(packet);
@@ -109,6 +177,12 @@ public class Room
 
             case RoomState.Playing:
                 {
+                    _logger.LogInformation(
+                        "Game ended because opponent disconnected. RoomId={RoomId} WinnerPlayerId={WinnerPlayerId} LoserPlayerId={LoserPlayerId}",
+                        Id,
+                        remain.Id,
+                        player.Id);
+
                     await EndGame(
                         new GameEndResult(
                             winner: remain,
@@ -127,6 +201,11 @@ public class Room
 
             case RoomState.Result:
                 {
+                    _logger.LogInformation(
+                        "Player exited after game result. RoomId={RoomId} RemainingPlayerId={PlayerId}",
+                        Id,
+                        remain.Id);
+
                     // 상대가 나갔음을 알림
                     var packet = new S_OpponentExitPacket();
 
@@ -152,14 +231,42 @@ public class Room
         lock (_lock)
         {
             if (State != RoomState.Ready)
+            {
+                _logger.LogWarning(
+                    "Ready request ignored because room is not ready. RoomId={RoomId} PlayerId={PlayerId} State={State}",
+                    Id,
+                    player.Id,
+                    State);
+
                 return;
+            }
+
+            if (!_players.Contains(player))
+            {
+                _logger.LogWarning(
+                    "Ready request ignored because player is not in room. RoomId={RoomId} PlayerId={PlayerId}",
+                    Id,
+                    player.Id);
+
+                return;
+            }
+
 
             _readyMap[player.Id] = true;
+
+            _logger.LogInformation(
+                "Player is ready. RoomId={RoomId} PlayerId={PlayerId}",
+                Id,
+                player.Id);
 
             if (_readyMap.Values.All(v => v))
             {
                 State = RoomState.Starting;
                 shouldStart = true;
+
+                _logger.LogInformation(
+                    "All players are ready. Starting game countdown. RoomId={RoomId}",
+                    Id);
             }
         }
 
@@ -171,7 +278,9 @@ public class Room
 
     private async Task StartGameSync()
     {
-        Console.WriteLine($"Room {Id} START GAME SYNC");
+        _logger.LogInformation(
+             "Initializing game simulation. RoomId={RoomId}",
+             Id);
 
         GameState gameState = new();
 
@@ -180,10 +289,16 @@ public class Room
             gameState.AddPlayer(player);
         }
 
-        _simulation = new GameSimulation(gameState);
+        _simulation = new GameSimulation(gameState, _loggerFactory);
         _simulation.Initialize();
 
         _startTick = _currentTick + CountdownTicks;
+
+        _logger.LogInformation(
+            "Game start scheduled. RoomId={RoomId} CurrentTick={CurrentTick} StartTick={StartTick}",
+            Id,
+            _currentTick,
+            _startTick);
 
         var packet = new S_StartGamePacket
         {
@@ -223,9 +338,10 @@ public class Room
 
             State = RoomState.Playing;
 
-            Console.WriteLine(
-                $"Room {Id} GAME START " +
-                $"Tick={currentTick}");
+            _logger.LogInformation(
+                "Game started. RoomId={RoomId} Tick={Tick}",
+                Id,
+                currentTick);
         }
 
 
@@ -275,7 +391,16 @@ public class Room
     public void EnqueueInput(Player player, InputType type)
     {
         if (State != RoomState.Playing)
+        {
+            _logger.LogDebug(
+                "Input ignored because room is not playing. RoomId={RoomId} PlayerId={PlayerId} State={State} InputType={InputType}",
+                Id,
+                player.Id,
+                State,
+                type);
+
             return;
+        }
 
         _simulation?.EnqueueInput(
             new PlayerInputCommand(player, type)
@@ -285,10 +410,12 @@ public class Room
 
     private async Task EndGame(GameEndResult result)
     {
-        Console.WriteLine(
-            $"Room {Id} GAME END: " +
-            $"Winner={result.Winner?.Id}, " +
-            $"Loser={result.Loser?.Id}");
+        _logger.LogInformation(
+            "Game ended. RoomId={RoomId} Winner={Winner} Loser={Loser} Reason={Reason}",
+            Id,
+            result.Winner?.Id,
+            result.Loser?.Id,
+            result.Reason);
 
         foreach (Player player in _players)
         {
@@ -324,6 +451,10 @@ public class Room
         ResetRematchState();
 
         State = RoomState.Result;
+
+        _logger.LogInformation(
+            "Room entered result state. RoomId={RoomId}",
+            Id);
     }
 
 
@@ -335,17 +466,42 @@ public class Room
         lock (_lock)
         {
             if (State != RoomState.Result)
+            {
+                _logger.LogWarning(
+                    "Rematch request ignored because room is not in result state. RoomId={RoomId} PlayerId={PlayerId} State={State}",
+                    Id,
+                    player.Id,
+                    State);
+
                 return;
+            }
 
             if (!_players.Contains(player))
+            {
+                _logger.LogWarning(
+                    "Rematch request ignored because player is not in room. RoomId={RoomId} PlayerId={PlayerId}",
+                    Id,
+                    player.Id);
+
                 return;
+            }
+
 
             _rematchMap[player.Id] = true;
+
+            _logger.LogInformation(
+                "Player requested rematch. RoomId={RoomId} PlayerId={PlayerId}",
+                Id,
+                player.Id);
 
             if (_rematchMap.Values.All(v => v))
             {
                 State = RoomState.Ready;
                 shouldRestart = true;
+
+                _logger.LogInformation(
+                    "All players requested rematch. Room restarting. RoomId={RoomId}",
+                    Id);
             }
         }
 
@@ -357,6 +513,10 @@ public class Room
 
     private async Task RestartRoomAsync()
     {
+        _logger.LogInformation(
+            "Restarting room. RoomId={RoomId}",
+            Id);
+
         ResetReadyState();
         ResetRematchState();
 
@@ -383,6 +543,11 @@ public class Room
 
     private async Task SendRoomReadyAsync()
     {
+        _logger.LogDebug(
+            "Sending room ready packet. RoomId={RoomId} PlayerCount={PlayerCount}",
+            Id,
+            _players.Count);
+
         var packet = new S_RoomReadyPacket
         {
             RoomId = Id

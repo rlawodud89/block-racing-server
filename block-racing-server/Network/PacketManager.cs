@@ -1,6 +1,7 @@
 ﻿using block_racing_common.Network;
 using block_racing_common.Network.Packets;
 using block_racing_server.Network.Handlers;
+using Microsoft.Extensions.Logging;
 
 namespace block_racing_server.Network;
 
@@ -9,8 +10,12 @@ public class PacketManager
     private readonly Dictionary<PacketId, Action<PlayerSession, PacketReader>> _handlers
         = new();
 
-    public PacketManager()
+    private readonly ILogger<PacketManager> _logger;
+
+    public PacketManager(ILoggerFactory loggerFactory)
     {
+        _logger = loggerFactory.CreateLogger<PacketManager>();
+
         Register<C_LoginPacket>(PacketId.C_Login, C_LoginHandler.Handle);
         Register<C_MatchRequestPacket>(PacketId.C_MatchRequest, C_MatchRequestHandler.Handle);
         Register<C_ReadyPacket>(PacketId.C_Ready, C_ReadyHandler.Handle);
@@ -18,7 +23,7 @@ public class PacketManager
         Register<C_CreateRoomPacket>(PacketId.C_CreateRoom, C_CreateRoomHandler.Handle);
         Register<C_JoinRoomPacket>(PacketId.C_JoinRoom, C_JoinRoomHandler.Handle);
         Register<C_CloseRoomPacket>(PacketId.C_CloseRoom, C_CloseRoomHandler.Handle);
-        Register<C_RematchReqeustPacket>(PacketId.C_RematchRequest, C_RematchRequestHandler.Handle);
+        Register<C_RematchRequestPacket>(PacketId.C_RematchRequest, C_RematchRequestHandler.Handle);
         Register<C_ExitRoomPacket>(PacketId.C_ExitRoom, C_ExitRoomHandler.Handle);
         Register<C_HeartbeatPacket>(PacketId.C_Heartbeat, C_HeartbeatHandler.Handle);
     }
@@ -42,11 +47,19 @@ public class PacketManager
     {
         if (_handlers.TryGetValue(id, out var handler))
         {
+            _logger.LogDebug(
+                "Processing packet. SessionId={SessionId} PacketId={PacketId}",
+                session.Id,
+                id);
+
             handler(session, reader);
         }
         else
         {
-            Console.WriteLine($"Unknown Packet : {id}");
+            _logger.LogWarning(
+                "Unknown packet received. SessionId={SessionId} PacketId={PacketId}",
+                session.Id,
+                id);
         }
     }
 }
