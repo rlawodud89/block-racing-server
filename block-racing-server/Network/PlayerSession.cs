@@ -1,9 +1,10 @@
 ﻿using block_racing_common.Network;
-using block_racing_server.Game.Players;
-using System.Net.Sockets;
-
-using block_racing_server.Game;
 using block_racing_common.Network.Packets;
+using block_racing_server.Game;
+using block_racing_server.Game.Players;
+using Microsoft.Extensions.Logging;
+using Serilog.Core;
+using System.Net.Sockets;
 
 namespace block_racing_server.Network;
 
@@ -21,6 +22,8 @@ public class PlayerSession
 
     private readonly GameManager _gameManager;
 
+    private readonly ILogger<PlayerSession> _logger;
+
     private DateTime _lastHeartbeatTime;
     private DateTime _lastHeartbeatSendTime;
 
@@ -29,7 +32,12 @@ public class PlayerSession
 
     private int _isDisconnected;
 
-    public PlayerSession(TcpClient client, PacketManager packetManager, SessionManager sessionManager, GameManager gameManager)
+    public PlayerSession(
+        TcpClient client,
+        PacketManager packetManager,
+        SessionManager sessionManager,
+        GameManager gameManager,
+        ILoggerFactory loggerFactory)
     {
         _client = client;
         _stream = client.GetStream();
@@ -39,6 +47,8 @@ public class PlayerSession
         _receiveBuffer = new ReceiveBuffer();
         _gameManager = gameManager;
 
+        _logger = loggerFactory.CreateLogger<PlayerSession>();
+
         _lastHeartbeatTime = DateTime.UtcNow;
         _lastHeartbeatSendTime = DateTime.UtcNow;
     }
@@ -46,7 +56,10 @@ public class PlayerSession
 
     public async Task StartAsync()
     {
-        Console.WriteLine($"PlayerSession 시작 : {_client.Client.RemoteEndPoint}");
+        _logger.LogInformation(
+            "Player session started. SessionId={SessionId} RemoteEndPoint={RemoteEndPoint}",
+            Id,
+            _client.Client.RemoteEndPoint);
 
         await ReceiveLoopAsync();
     }
@@ -63,7 +76,14 @@ public class PlayerSession
                     await _stream.ReadAsync(buffer);
 
                 if (received == 0)
+                {
+                    _logger.LogInformation(
+                        "Client closed connection. SessionId={SessionId}",
+                        Id);
+
                     break;
+                }
+
 
                 _receiveBuffer.Append(buffer, received);
 
@@ -75,7 +95,10 @@ public class PlayerSession
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            _logger.LogError(
+                ex,
+                "Error occurred while receiving data. SessionId={SessionId}",
+                Id);
         }
         finally
         {
@@ -85,29 +108,63 @@ public class PlayerSession
 
     private void ProcessPacket(byte[] packet)
     {
-        PacketReader reader = new(packet);
+        try
+        {
+            PacketReader reader = new(packet);
 
-        // Length skip
-        ushort length = reader.ReadUInt16();
+            // Length skip
+            ushort length = reader.ReadUInt16();
 
-        ushort packetId = reader.ReadUInt16();
+            ushort packetId = reader.ReadUInt16();
 
-        PacketId id = (PacketId)packetId;
+            PacketId id = (PacketId)packetId;
 
-        _packetManager.Process(this, id, reader);
+            _packetManager.Process(this, id, reader);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Error occurred while processing packet. SessionId={SessionId}",
+                Id);
+        }
     }
 
     public async Task SendAsync(byte[] data)
     {
-        await _stream.WriteAsync(data);
+        try
+        {
+            await _stream.WriteAsync(data);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Error occurred while sending data. SessionId={SessionId}",
+                Id);
+
+            throw;
+        }
     }
 
     public async Task SendAsync(IPacket packet)
     {
-        PacketWriter writer = new((ushort)packet.PacketId);
-        packet.Write(writer);
+        try
+        {
+            PacketWriter writer = new((ushort)packet.PacketId);
+            packet.Write(writer);
 
-        await _stream.WriteAsync(writer.ToArray());
+            await _stream.WriteAsync(writer.ToArray());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Error occurred while sending packet. SessionId={SessionId} PacketId={PacketId}",
+                Id,
+                packet.PacketId);
+
+            throw;
+        }
     }
 
     public async Task DisconnectAsync()
@@ -115,13 +172,33 @@ public class PlayerSession
         if (Interlocked.Exchange(ref _isDisconnected, 1) == 1)
             return;
 
-        if (Player != null)
-            await _gameManager.UnregisterPlayer(Player);
+        _logger.LogInformation(
+            "Disconnecting session. SessionId={SessionId} PlayerId={PlayerId}",
+            Id,
+            Player?.Id);
 
-        _sessionManager.Remove(this);
+        try
+        {
+            if (Player != null)
+                await _gameManager.UnregisterPlayer(Player);
 
-        _stream.Close();
-        _client.Close();
+            _sessionManager.Remove(this);
+
+            _stream.Close();
+            _client.Close();
+
+            _logger.LogInformation(
+                "Session disconnected. SessionId={SessionId}",
+                Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Error occurred while disconnecting session. SessionId={SessionId}",
+                Id);
+        }
+
     }
 
 
@@ -157,6 +234,12 @@ public class PlayerSession
 
         _gameManager.RegisterPlayer(Player);
 
+        _logger.LogInformation(
+            "Player logged in. SessionId={SessionId} PlayerId={PlayerId} Nickname={Nickname}",
+            Id,
+            Player.Id,
+            nickname);
+
         S_LoginPacket responsePacket = new()
         {
             PlayerId = Id,
@@ -169,7 +252,14 @@ public class PlayerSession
     public void OnMatchRequest(bool isMatch)
     {
         if (Player == null)
+        {
+            _logger.LogWarning(
+                "Match request ignored because player is not logged in. SessionId={SessionId}",
+                Id);
+
             return;
+        }
+
 
         if (isMatch)
         {
@@ -184,7 +274,17 @@ public class PlayerSession
     public async Task OnCreatePrivateRoom()
     {
         if (Player == null)
+        {
+            _logger.LogWarning(
+                "Create room request ignored because player is not logged in. SessionId={SessionId}",
+                Id);
+
             return;
+        }
+
+        _logger.LogInformation(
+            "Create private room request received. PlayerId={PlayerId}",
+            Player.Id);
 
         await _gameManager.CreatePrivateRoom(Player);
     }
@@ -192,7 +292,18 @@ public class PlayerSession
     public async Task OnJoinRoom(string roomCode)
     {
         if (Player == null)
+        {
+            _logger.LogWarning(
+                "Join room request ignored because player is not logged in. SessionId={SessionId}",
+                Id);
+
             return;
+        }
+
+        _logger.LogInformation(
+            "Join room request received. PlayerId={PlayerId} RoomCode={RoomCode}",
+            Player.Id,
+            roomCode);
 
         await _gameManager.JoinRoom(Player, roomCode);
     }
@@ -200,7 +311,17 @@ public class PlayerSession
     public async Task OnCloseRoom()
     {
         if (Player == null)
+        {
+            _logger.LogWarning(
+                "Leave room request ignored because player is not logged in. SessionId={SessionId}",
+                Id);
+
             return;
+        }
+
+        _logger.LogInformation(
+            "Leave room request received. PlayerId={PlayerId}",
+            Player.Id);
 
         await _gameManager.LeaveRoom(Player);
     }

@@ -6,12 +6,6 @@ public static class C_CreateRoomHandler
 {
     public static void Handle(PlayerSession session, C_CreateRoomPacket packet)
     {
-        if (session.Player == null)
-        {
-            Console.WriteLine($"Player session {session.Id} has no player associated.");
-            return;
-        }
-
         _ = session.OnCreatePrivateRoom();
     }
 }

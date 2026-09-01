@@ -1,6 +1,7 @@
 ﻿using block_racing_common.Network;
 using block_racing_server.Game;
 using block_racing_server.Game.Rooms;
+using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Net.Sockets;
 
@@ -10,17 +11,26 @@ public class TcpServer
 {
     private TcpListener? _listener;
 
-    private readonly SessionManager _sessionManager = new();
-    private readonly PacketManager _packetManager = new();
+    private readonly SessionManager _sessionManager;
+    private readonly PacketManager _packetManager;
 
     private readonly GameManager _gameManager;
 
     private CancellationTokenSource _cts = new();
 
-    public TcpServer()
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly ILogger<TcpServer> _logger;
+
+    public TcpServer(ILoggerFactory loggerFactory)
     {
-        var roomManager = new RoomManager();
-        _gameManager = new GameManager(roomManager);
+        _loggerFactory = loggerFactory;
+        _logger = loggerFactory.CreateLogger<TcpServer>();
+
+        _sessionManager = new SessionManager(loggerFactory);
+        _packetManager = new PacketManager(loggerFactory);
+
+        var roomManager = new RoomManager(loggerFactory);
+        _gameManager = new GameManager(roomManager, loggerFactory);
     }
 
 
@@ -29,7 +39,9 @@ public class TcpServer
         _listener = new TcpListener(IPAddress.Any, port);
         _listener.Start();
 
-        Console.WriteLine($"서버 시작 : {port}");
+        _logger.LogInformation(
+            "Server started. Port={Port}",
+            port);
 
         try
         {
@@ -39,8 +51,17 @@ public class TcpServer
             {
                 TcpClient client = await _listener.AcceptTcpClientAsync();
 
+                _logger.LogInformation(
+                    "Client accepted. RemoteEndPoint={RemoteEndPoint}",
+                    client.Client.RemoteEndPoint);
+
                 PlayerSession session =
-                    new(client, _packetManager, _sessionManager, _gameManager);
+                    new(
+                        client,
+                        _packetManager,
+                        _sessionManager,
+                        _gameManager,
+                        _loggerFactory);
 
                 _sessionManager.Add(session);
 
@@ -49,12 +70,13 @@ public class TcpServer
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"서버 에러: {ex.Message}");
-            return;
+            _logger.LogError(ex, "Server error occurred.");
         }
         finally
         {
             _listener.Stop();
+
+            _logger.LogInformation("Server stopped.");
         }
 
     }
@@ -79,10 +101,13 @@ public class TcpServer
                     await Task.Delay(delay, token);
             }
         }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            _logger.LogInformation("Game loop stopped.");
+        }
         catch (Exception ex)
         {
-            Console.WriteLine("[GAME LOOP CRASHED]");
-            Console.WriteLine(ex);
+            _logger.LogError(ex, "Game loop crashed.");
         }
     }
 }

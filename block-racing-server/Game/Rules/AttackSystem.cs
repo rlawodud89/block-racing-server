@@ -28,8 +28,6 @@ public class AttackSystem
             if (!CanSpawn(lane, attack))
                 break;
 
-            Console.WriteLine("Spawn Attack!");
-
             lane.SpawnAttack(attack);
 
             lane.PendingAttacks.Dequeue();
