@@ -6,7 +6,7 @@ namespace block_racing_server.Network.Handlers;
 
 public static class C_RematchRequestHandler
 {
-    public static void Handle(PlayerSession session, C_RematchReqeustPacket packet)
+    public static void Handle(PlayerSession session, C_RematchRequestPacket packet)
     {
         Player? player = session.Player;
 
