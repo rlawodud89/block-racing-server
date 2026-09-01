@@ -11,11 +11,19 @@ public class Program
     {
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
-            .WriteTo.Console()
+            .WriteTo.Console(
+                outputTemplate:
+                    "[{Timestamp:HH:mm:ss} {Level:u3}] " +
+                    "[{SourceContext}] " +
+                    "{Message:lj}{NewLine}{Exception}")
             .WriteTo.File(
                 "logs/server-.log",
                 rollingInterval: RollingInterval.Day,
-                retainedFileCountLimit: 7)
+                retainedFileCountLimit: 7,
+                outputTemplate:
+                    "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] " +
+                    "[{SourceContext}] " +
+                    "{Message:lj}{NewLine}{Exception}")
             .CreateLogger();
 
         try
