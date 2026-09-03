@@ -376,13 +376,11 @@ public class Room
         S_GameStatePacket packet = new(snapshot);
 
         PacketWriter writer = new((ushort)packet.PacketId);
-
         packet.Write(writer);
-
         byte[] bytes = writer.ToArray();
 
-
-        foreach (Player player in _players)
+        Player[] players = _players.ToArray();
+        foreach (Player player in players)
         {
             await player.Session.SendAsync(bytes);
         }
