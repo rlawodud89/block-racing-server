@@ -136,35 +136,39 @@ public class PlayerSession
         {
             await _stream.WriteAsync(data);
         }
-        catch (Exception ex)
+        catch (IOException ex)
         {
-            _logger.LogError(
-                ex,
-                "Error occurred while sending data. SessionId={SessionId}",
+            // 연결이 끊긴 상태에서 전송을 시도한 경우
+            _logger.LogWarning(
+                "Failed to send data because connection was lost. SessionId={SessionId}",
                 Id);
 
-            throw;
+            _ = DisconnectAsync();
+        }
+        catch (SocketException ex)
+        {
+            _logger.LogWarning(
+                "Failed to send data because connection was lost. SessionId={SessionId}",
+                Id);
+
+            _ = DisconnectAsync();
+        }
+        catch (ObjectDisposedException)
+        {
+            // 이미 연결이 정리된 경우
+            _logger.LogDebug(
+                "Send ignored because session is already disposed. SessionId={SessionId}",
+                Id);
         }
     }
 
+
     public async Task SendAsync(IPacket packet)
     {
-        try
-        {
-            PacketWriter writer = new((ushort)packet.PacketId);
-            packet.Write(writer);
+        PacketWriter writer = new((ushort)packet.PacketId);
+        packet.Write(writer);
 
-            await _stream.WriteAsync(writer.ToArray());
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex,
-                "Error occurred while sending packet. SessionId={SessionId} PacketId={PacketId}",
-                Id,
-                packet.PacketId);
-
-            throw;
-        }
+        await _stream.WriteAsync(writer.ToArray());
     }
 
     public async Task DisconnectAsync()
