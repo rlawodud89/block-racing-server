@@ -32,6 +32,9 @@ public class PlayerSession
 
     private int _isDisconnected;
 
+    public bool IsDisconnected =>
+        Volatile.Read(ref _isDisconnected) == 1;
+
     public PlayerSession(
         TcpClient client,
         PacketManager packetManager,
@@ -92,6 +95,20 @@ public class PlayerSession
                     ProcessPacket(packet);
                 }
             }
+        }
+        catch (IOException ex)
+        {
+            if (Volatile.Read(ref _isDisconnected) == 1)
+                return;
+
+            _logger.LogError(
+                ex,
+                "Error occurred while receiving data. SessionId={SessionId}",
+                Id);
+        }
+        catch (ObjectDisposedException)
+        {
+            // 정상적인 연결 종료
         }
         catch (Exception ex)
         {
@@ -165,10 +182,38 @@ public class PlayerSession
 
     public async Task SendAsync(IPacket packet)
     {
-        PacketWriter writer = new((ushort)packet.PacketId);
-        packet.Write(writer);
+        try
+        {
+            PacketWriter writer = new((ushort)packet.PacketId);
+            packet.Write(writer);
 
-        await _stream.WriteAsync(writer.ToArray());
+            await _stream.WriteAsync(writer.ToArray());
+        }
+        catch (IOException ex)
+        {
+            // 연결이 끊긴 상태에서 전송을 시도한 경우
+            _logger.LogWarning(
+                "Failed to send data because connection was lost. SessionId={SessionId}",
+                Id);
+
+            _ = DisconnectAsync();
+        }
+        catch (SocketException ex)
+        {
+            _logger.LogWarning(
+                "Failed to send data because connection was lost. SessionId={SessionId}",
+                Id);
+
+            _ = DisconnectAsync();
+        }
+        catch (ObjectDisposedException)
+        {
+            // 이미 연결이 정리된 경우
+            _logger.LogDebug(
+                "Send ignored because session is already disposed. SessionId={SessionId}",
+                Id);
+        }
+
     }
 
     public async Task DisconnectAsync()
@@ -185,24 +230,33 @@ public class PlayerSession
         {
             if (Player != null)
                 await _gameManager.UnregisterPlayer(Player);
-
-            _sessionManager.Remove(this);
-
-            _stream.Close();
-            _client.Close();
-
-            _logger.LogInformation(
-                "Session disconnected. SessionId={SessionId}",
-                Id);
         }
         catch (Exception ex)
         {
             _logger.LogError(
                 ex,
-                "Error occurred while disconnecting session. SessionId={SessionId}",
+                "Error occurred while unregistering player. SessionId={SessionId} PlayerId={PlayerId}",
+                Id,
+                Player?.Id);
+        }
+        finally
+        {
+            _sessionManager.Remove(this);
+
+            try
+            {
+                _stream.Close();
+                _client.Close();
+            }
+            catch
+            {
+                // 이미 종료된 연결
+            }
+
+            _logger.LogInformation(
+                "Session disconnected. SessionId={SessionId}",
                 Id);
         }
-
     }
 
 

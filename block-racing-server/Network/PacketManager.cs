@@ -47,10 +47,10 @@ public class PacketManager
     {
         if (_handlers.TryGetValue(id, out var handler))
         {
-            _logger.LogDebug(
-                "Processing packet. SessionId={SessionId} PacketId={PacketId}",
-                session.Id,
-                id);
+            //_logger.LogDebug(
+            //    "Processing packet. SessionId={SessionId} PacketId={PacketId}",
+            //    session.Id,
+            //    id);
 
             handler(session, reader);
         }

@@ -415,7 +415,9 @@ public class Room
             result.Loser?.Id,
             result.Reason);
 
-        foreach (Player player in _players)
+        Player[] players = _players.ToArray();
+
+        foreach (Player player in players)
         {
             GameResultType gameResult;
 
