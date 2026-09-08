@@ -4,7 +4,6 @@ using block_racing_server.Game.Players;
 using block_racing_server.Game.Rooms;
 using Microsoft.Extensions.Logging;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 
 public class MatchMaker
 {
@@ -124,18 +123,10 @@ public class MatchMaker
 
     public async Task TryMatch()
     {
-        var stopwatch = Stopwatch.StartNew();
-
-        // Candidate
-        var candidateStart = stopwatch.Elapsed;
-
         var candidates = _players.Values
             .Where(p => p.MatchState == MatchState.Queued)
             .Take(2)
             .ToList();
-
-        var candidateElapsed =
-            stopwatch.Elapsed - candidateStart;
 
         if (candidates.Count < 2)
             return;
@@ -143,84 +134,60 @@ public class MatchMaker
         var p1 = candidates[0];
         var p2 = candidates[1];
 
-        // Reserve
-        var reserveStart = stopwatch.Elapsed;
+        _logger.LogInformation(
+            "Match candidates found. PlayerA={PlayerA} PlayerB={PlayerB}",
+            p1.Id,
+            p2.Id);
+
 
         if (!TryReserve(p1))
+        {
+            _logger.LogWarning(
+                "Failed to reserve first player. PlayerId={PlayerId} MatchState={MatchState}",
+                p1.Id,
+                p1.MatchState);
+
             return;
+        }
 
         if (!TryReserve(p2))
         {
+            _logger.LogWarning(
+                "Failed to reserve second player. PlayerId={PlayerId} MatchState={MatchState}",
+                p2.Id,
+                p2.MatchState);
+
             p1.MatchState = MatchState.Queued;
+
+            _logger.LogDebug(
+                "First player returned to matchmaking queue. PlayerId={PlayerId}",
+                p1.Id);
+
             return;
         }
 
-        var reserveElapsed =
-            stopwatch.Elapsed - reserveStart;
 
-        // Room Create
-        var roomStart = stopwatch.Elapsed;
+        _logger.LogInformation(
+            "Match reserved. PlayerA={PlayerA} PlayerB={PlayerB}",
+            p1.Id,
+            p2.Id);
 
         var room = _roomManager.CreateRoom();
 
-        var roomCreateElapsed =
-            stopwatch.Elapsed - roomStart;
+        _logger.LogInformation(
+           "Match room created. RoomId={RoomId} PlayerA={PlayerA} PlayerB={PlayerB}",
+           room.Id,
+           p1.Id,
+           p2.Id);
 
-        // Add Player 1
-        var addP1Start = Stopwatch.GetTimestamp();
 
         bool addedP1 = await room.AddPlayer(p1);
-
-        var addP1Elapsed =
-            Stopwatch.GetElapsedTime(addP1Start);
-
-        // Add Player 2
-        var addP2Start = Stopwatch.GetTimestamp();
-
         bool addedP2 = await room.AddPlayer(p2);
 
-        var addP2Elapsed =
-            Stopwatch.GetElapsedTime(addP2Start);
-
-        stopwatch.Stop();
-
-        // 느린 AddP2만 별도로 기록
-        if (addP2Elapsed > TimeSpan.FromMilliseconds(30))
-        {
-            _logger.LogWarning(
-                "AddP2 slow. " +
-                "RoomId={RoomId} " +
-                "PlayerId={PlayerId} " +
-                "ElapsedMs={ElapsedMs:F2}",
-                room.Id,
-                p2.Id,
-                addP2Elapsed.TotalMilliseconds);
-        }
-
-        _logger.LogWarning(
-            "Match timing. " +
-            "CandidateMs={CandidateMs:F2} " +
-            "ReserveMs={ReserveMs:F2} " +
-            "RoomCreateMs={RoomCreateMs:F2} " +
-            "AddP1Ms={AddP1Ms:F2} " +
-            "AddP2Ms={AddP2Ms:F2} " +
-            "TotalMs={TotalMs:F2} " +
-            "RoomId={RoomId}",
-            candidateElapsed.TotalMilliseconds,
-            reserveElapsed.TotalMilliseconds,
-            roomCreateElapsed.TotalMilliseconds,
-            addP1Elapsed.TotalMilliseconds,
-            addP2Elapsed.TotalMilliseconds,
-            stopwatch.Elapsed.TotalMilliseconds,
-            room.Id);
-
-        // 실패 처리
         if (!addedP1 || !addedP2)
         {
             _logger.LogError(
-                "Failed to add matched players to room. " +
-                "RoomId={RoomId} PlayerA={PlayerA} PlayerB={PlayerB} " +
-                "AddedPlayerA={AddedPlayerA} AddedPlayerB={AddedPlayerB}",
+                "Failed to add matched players to room. RoomId={RoomId} PlayerA={PlayerA} PlayerB={PlayerB} AddedPlayerA={AddedPlayerA} AddedPlayerB={AddedPlayerB}",
                 room.Id,
                 p1.Id,
                 p2.Id,
@@ -234,7 +201,16 @@ public class MatchMaker
 
             p1.MatchState = MatchState.None;
             p2.MatchState = MatchState.None;
+
+            return;
         }
+
+
+        _logger.LogInformation(
+            "Match completed successfully. RoomId={RoomId} PlayerA={PlayerA} PlayerB={PlayerB}",
+            room.Id,
+            p1.Id,
+            p2.Id);
     }
 
     private bool TryReserve(Player player)

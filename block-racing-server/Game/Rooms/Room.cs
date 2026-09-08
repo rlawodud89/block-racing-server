@@ -8,7 +8,6 @@ using block_racing_server.Game.Players;
 using block_racing_server.Game.Rules;
 using block_racing_server.Game.Simulations;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 
 namespace block_racing_server.Game.Rooms;
 
@@ -51,7 +50,7 @@ public class Room
 
     public IReadOnlyList<Player> Players => _players;
 
-    public Task<bool> AddPlayer(Player player)
+    public async Task<bool> AddPlayer(Player player)
     {
         if (State != RoomState.Waiting)
         {
@@ -61,7 +60,7 @@ public class Room
                 player.Id,
                 State);
 
-            return Task.FromResult(false);
+            return false;
         }
 
         if (_players.Count >= 2)
@@ -71,7 +70,7 @@ public class Room
                 Id,
                 player.Id);
 
-            return Task.FromResult(false);
+            return false;
         }
 
         if (player.Room != null)
@@ -82,8 +81,9 @@ public class Room
                 player.Id,
                 player.Room.Id);
 
-            return Task.FromResult(false);
+            return false;
         }
+
 
         _players.Add(player);
 
@@ -99,14 +99,21 @@ public class Room
             player.Id,
             _players.Count);
 
+
         if (_players.Count == 2)
         {
             State = RoomState.Ready;
 
-            _ = SendRoomReadyAsync();
+            _logger.LogInformation(
+               "Room is ready. RoomId={RoomId} PlayerCount={PlayerCount}",
+               Id,
+               _players.Count);
+
+            await SendRoomReadyAsync();
         }
 
-        return Task.FromResult(true);
+
+        return true;
     }
 
     public async Task<bool> RemovePlayerAsync(Player player)
@@ -551,9 +558,7 @@ public class Room
 
         byte[] bytes = writer.ToArray();
 
-        Player[] players = _players.ToArray();
-
-        foreach (Player player in players)
+        foreach (Player player in _players)
         {
             await player.Session.SendAsync(bytes);
         }
