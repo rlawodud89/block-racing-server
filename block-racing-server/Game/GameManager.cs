@@ -1,9 +1,10 @@
-﻿using block_racing_common.Network.Packets;
-using block_racing_common.Game.Enums;
+﻿using block_racing_common.Game.Enums;
+using block_racing_common.Network.Packets;
 using block_racing_server.Game.Matchs;
 using block_racing_server.Game.Players;
 using block_racing_server.Game.Rooms;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace block_racing_server.Game;
 
@@ -30,13 +31,55 @@ public class GameManager
     {
         _currentTick++;
 
+        var stopwatch = Stopwatch.StartNew();
+
+        // Matchmaking
+        var matchStopwatch = Stopwatch.StartNew();
+
         await _matchMaker.TryMatch();
 
+        matchStopwatch.Stop();
+
+        var matchElapsed = matchStopwatch.Elapsed;
+
+        if (matchElapsed > TimeSpan.FromMilliseconds(30))
+        {
+            ThreadPool.GetAvailableThreads(
+                out int availableWorkerThreads,
+                out int availableCompletionPortThreads);
+
+            ThreadPool.GetMaxThreads(
+                out int maxWorkerThreads,
+                out int maxCompletionPortThreads);
+
+            _logger.LogWarning(
+                "MatchMaker call slow. " +
+                "Tick={Tick} ElapsedMs={ElapsedMs:F2} " +
+                "AvailableWorker={AvailableWorker}/{MaxWorker} " +
+                "AvailableIO={AvailableIO}/{MaxIO}",
+                _currentTick,
+                matchElapsed.TotalMilliseconds,
+                availableWorkerThreads,
+                maxWorkerThreads,
+                availableCompletionPortThreads,
+                maxCompletionPortThreads);
+        }
+
+        // Room Update
         var rooms = _roomManager.Rooms.ToList();
+
+        var roomUpdateStopwatch = Stopwatch.StartNew();
 
         await Task.WhenAll(
             rooms.Select(room => room.Update(_currentTick))
         );
+
+        roomUpdateStopwatch.Stop();
+
+        var roomUpdateElapsed = roomUpdateStopwatch.Elapsed;
+
+        // Room Remove
+        var roomRemoveStopwatch = Stopwatch.StartNew();
 
         foreach (Room room in rooms)
         {
@@ -48,6 +91,31 @@ public class GameManager
 
                 _roomManager.RemoveRoom(room.Id);
             }
+        }
+
+        roomRemoveStopwatch.Stop();
+
+        var roomRemoveElapsed = roomRemoveStopwatch.Elapsed;
+
+        stopwatch.Stop();
+
+        var totalElapsed = stopwatch.Elapsed;
+
+        if (totalElapsed > TimeSpan.FromMilliseconds(50))
+        {
+            _logger.LogWarning(
+                "GameManager.Update exceeded tick budget. " +
+                "Tick={Tick} TotalMs={TotalMs:F2} " +
+                "MatchMs={MatchMs:F2} " +
+                "RoomUpdateMs={RoomUpdateMs:F2} " +
+                "RoomRemoveMs={RoomRemoveMs:F2} " +
+                "RoomCount={RoomCount}",
+                _currentTick,
+                totalElapsed.TotalMilliseconds,
+                matchElapsed.TotalMilliseconds,
+                roomUpdateElapsed.TotalMilliseconds,
+                roomRemoveElapsed.TotalMilliseconds,
+                rooms.Count);
         }
     }
 
