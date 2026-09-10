@@ -7,6 +7,8 @@ using System.Collections.Concurrent;
 
 public class MatchMaker
 {
+    private const int MaxMatchesPerTick = 10;
+
     private readonly ConcurrentDictionary<long, Player> _players = new();
 
     private readonly RoomManager _roomManager;
@@ -123,94 +125,93 @@ public class MatchMaker
 
     public async Task TryMatch()
     {
-        var candidates = _players.Values
-            .Where(p => p.MatchState == MatchState.Queued)
-            .Take(2)
-            .ToList();
-
-        if (candidates.Count < 2)
-            return;
-
-        var p1 = candidates[0];
-        var p2 = candidates[1];
-
-        _logger.LogInformation(
-            "Match candidates found. PlayerA={PlayerA} PlayerB={PlayerB}",
-            p1.Id,
-            p2.Id);
-
-
-        if (!TryReserve(p1))
+        for (int i = 0; i < MaxMatchesPerTick; i++)
         {
-            _logger.LogWarning(
-                "Failed to reserve first player. PlayerId={PlayerId} MatchState={MatchState}",
+            var candidates = _players.Values
+                .Where(p => p.MatchState == MatchState.Queued)
+                .Take(2)
+                .ToList();
+
+            if (candidates.Count < 2)
+                return;
+
+            var p1 = candidates[0];
+            var p2 = candidates[1];
+
+            _logger.LogInformation(
+                "Match candidates found. PlayerA={PlayerA} PlayerB={PlayerB}",
                 p1.Id,
-                p1.MatchState);
+                p2.Id);
 
-            return;
-        }
+            if (!TryReserve(p1))
+            {
+                _logger.LogWarning(
+                    "Failed to reserve first player. PlayerId={PlayerId} MatchState={MatchState}",
+                    p1.Id,
+                    p1.MatchState);
 
-        if (!TryReserve(p2))
-        {
-            _logger.LogWarning(
-                "Failed to reserve second player. PlayerId={PlayerId} MatchState={MatchState}",
-                p2.Id,
-                p2.MatchState);
+                continue;
+            }
 
-            p1.MatchState = MatchState.Queued;
+            if (!TryReserve(p2))
+            {
+                _logger.LogWarning(
+                    "Failed to reserve second player. PlayerId={PlayerId} MatchState={MatchState}",
+                    p2.Id,
+                    p2.MatchState);
 
-            _logger.LogDebug(
-                "First player returned to matchmaking queue. PlayerId={PlayerId}",
-                p1.Id);
+                p1.MatchState = MatchState.Queued;
 
-            return;
-        }
+                _logger.LogDebug(
+                    "First player returned to matchmaking queue. PlayerId={PlayerId}",
+                    p1.Id);
 
+                continue;
+            }
 
-        _logger.LogInformation(
-            "Match reserved. PlayerA={PlayerA} PlayerB={PlayerB}",
-            p1.Id,
-            p2.Id);
+            _logger.LogInformation(
+                "Match reserved. PlayerA={PlayerA} PlayerB={PlayerB}",
+                p1.Id,
+                p2.Id);
 
-        var room = _roomManager.CreateRoom();
+            var room = _roomManager.CreateRoom();
 
-        _logger.LogInformation(
-           "Match room created. RoomId={RoomId} PlayerA={PlayerA} PlayerB={PlayerB}",
-           room.Id,
-           p1.Id,
-           p2.Id);
+            _logger.LogInformation(
+               "Match room created. RoomId={RoomId} PlayerA={PlayerA} PlayerB={PlayerB}",
+               room.Id,
+               p1.Id,
+               p2.Id);
 
+            bool addedP1 = await room.AddPlayer(p1);
+            bool addedP2 = await room.AddPlayer(p2);
 
-        bool addedP1 = await room.AddPlayer(p1);
-        bool addedP2 = await room.AddPlayer(p2);
+            if (!addedP1 || !addedP2)
+            {
+                _logger.LogError(
+                    "Failed to add matched players to room. RoomId={RoomId} PlayerA={PlayerA} PlayerB={PlayerB} AddedPlayerA={AddedPlayerA} AddedPlayerB={AddedPlayerB}",
+                    room.Id,
+                    p1.Id,
+                    p2.Id,
+                    addedP1,
+                    addedP2);
 
-        if (!addedP1 || !addedP2)
-        {
-            _logger.LogError(
-                "Failed to add matched players to room. RoomId={RoomId} PlayerA={PlayerA} PlayerB={PlayerB} AddedPlayerA={AddedPlayerA} AddedPlayerB={AddedPlayerB}",
+                _roomManager.RemoveRoom(room.Id);
+
+                p1.Room = null;
+                p2.Room = null;
+
+                p1.MatchState = MatchState.None;
+                p2.MatchState = MatchState.None;
+
+                continue;
+            }
+
+            _logger.LogInformation(
+                "Match completed successfully. RoomId={RoomId} PlayerA={PlayerA} PlayerB={PlayerB}",
                 room.Id,
                 p1.Id,
-                p2.Id,
-                addedP1,
-                addedP2);
-
-            _roomManager.RemoveRoom(room.Id);
-
-            p1.Room = null;
-            p2.Room = null;
-
-            p1.MatchState = MatchState.None;
-            p2.MatchState = MatchState.None;
-
-            return;
+                p2.Id);
         }
-
-
-        _logger.LogInformation(
-            "Match completed successfully. RoomId={RoomId} PlayerA={PlayerA} PlayerB={PlayerB}",
-            room.Id,
-            p1.Id,
-            p2.Id);
     }
 
     private bool TryReserve(Player player)

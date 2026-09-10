@@ -3,8 +3,9 @@ using block_racing_common.Network.Packets;
 using block_racing_server.Game;
 using block_racing_server.Game.Players;
 using Microsoft.Extensions.Logging;
-using Serilog.Core;
+using System.Diagnostics;
 using System.Net.Sockets;
+using System.Threading.Channels;
 
 namespace block_racing_server.Network;
 
@@ -24,6 +25,9 @@ public class PlayerSession
 
     private readonly ILogger<PlayerSession> _logger;
 
+    private readonly Channel<byte[]> _sendQueue;
+    private Task? _sendLoopTask;
+
     private DateTime _lastHeartbeatTime;
     private DateTime _lastHeartbeatSendTime;
 
@@ -31,6 +35,9 @@ public class PlayerSession
     private const int HeartbeatTimeout = 5000;
 
     private int _isDisconnected;
+
+    public bool IsDisconnected =>
+        Volatile.Read(ref _isDisconnected) == 1;
 
     public PlayerSession(
         TcpClient client,
@@ -49,10 +56,16 @@ public class PlayerSession
 
         _logger = loggerFactory.CreateLogger<PlayerSession>();
 
+        _sendQueue = Channel.CreateUnbounded<byte[]>(
+            new UnboundedChannelOptions
+            {
+                SingleReader = true,
+                SingleWriter = false
+            });
+
         _lastHeartbeatTime = DateTime.UtcNow;
         _lastHeartbeatSendTime = DateTime.UtcNow;
     }
-
 
     public async Task StartAsync()
     {
@@ -60,6 +73,8 @@ public class PlayerSession
             "Player session started. SessionId={SessionId} RemoteEndPoint={RemoteEndPoint}",
             Id,
             _client.Client.RemoteEndPoint);
+
+        _sendLoopTask = SendLoopAsync();
 
         await ReceiveLoopAsync();
     }
@@ -84,7 +99,6 @@ public class PlayerSession
                     break;
                 }
 
-
                 _receiveBuffer.Append(buffer, received);
 
                 while (_receiveBuffer.TryReadPacket(out byte[] packet))
@@ -92,6 +106,20 @@ public class PlayerSession
                     ProcessPacket(packet);
                 }
             }
+        }
+        catch (IOException ex)
+        {
+            if (Volatile.Read(ref _isDisconnected) == 1)
+                return;
+
+            _logger.LogError(
+                ex,
+                "Error occurred while receiving data. SessionId={SessionId}",
+                Id);
+        }
+        catch (ObjectDisposedException)
+        {
+            // 정상적인 연결 종료
         }
         catch (Exception ex)
         {
@@ -130,51 +158,141 @@ public class PlayerSession
         }
     }
 
-    public async Task SendAsync(byte[] data)
+    /// <summary>
+    /// 패킷을 송신 Queue에 등록한다.
+    /// 실제 Socket 전송은 SendLoopAsync()에서 수행한다.
+    /// </summary>
+    public Task SendAsync(byte[] data)
+    {
+        if (IsDisconnected)
+            return Task.CompletedTask;
+
+        try
+        {
+            if (!_sendQueue.Writer.TryWrite(data))
+            {
+                _logger.LogWarning(
+                    "Failed to enqueue data because send queue is closed. SessionId={SessionId}",
+                    Id);
+
+                _ = DisconnectAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Failed to enqueue data for sending. SessionId={SessionId}",
+                Id);
+
+            _ = DisconnectAsync();
+        }
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// IPacket을 직렬화한 뒤 송신 Queue에 등록한다.
+    /// </summary>
+    public Task SendAsync(IPacket packet)
     {
         try
         {
-            await _stream.WriteAsync(data);
+            PacketWriter writer = new((ushort)packet.PacketId);
+            packet.Write(writer);
+
+            byte[] data = writer.ToArray();
+
+            return SendAsync(data);
         }
-        catch (IOException ex)
+        catch (Exception ex)
         {
-            // 연결이 끊긴 상태에서 전송을 시도한 경우
-            _logger.LogWarning(
-                "Failed to send data because connection was lost. SessionId={SessionId}",
+            _logger.LogError(
+                ex,
+                "Failed to prepare packet for sending. SessionId={SessionId}",
                 Id);
 
             _ = DisconnectAsync();
-        }
-        catch (SocketException ex)
-        {
-            _logger.LogWarning(
-                "Failed to send data because connection was lost. SessionId={SessionId}",
-                Id);
 
-            _ = DisconnectAsync();
-        }
-        catch (ObjectDisposedException)
-        {
-            // 이미 연결이 정리된 경우
-            _logger.LogDebug(
-                "Send ignored because session is already disposed. SessionId={SessionId}",
-                Id);
+            return Task.CompletedTask;
         }
     }
 
-
-    public async Task SendAsync(IPacket packet)
+    /// <summary>
+    /// 송신 Queue에서 패킷을 꺼내 실제 Socket으로 전송한다.
+    /// 이 메서드만 Socket WriteAsync()를 수행한다.
+    /// </summary>
+    private async Task SendLoopAsync()
     {
-        PacketWriter writer = new((ushort)packet.PacketId);
-        packet.Write(writer);
+        try
+        {
+            await foreach (byte[] data in _sendQueue.Reader.ReadAllAsync())
+            {
+                if (IsDisconnected)
+                    break;
 
-        await _stream.WriteAsync(writer.ToArray());
+                var start = Stopwatch.GetTimestamp();
+
+                try
+                {
+                    await _stream.WriteAsync(data);
+
+                    var elapsed =
+                        Stopwatch.GetElapsedTime(start);
+
+                    if (elapsed > TimeSpan.FromMilliseconds(10))
+                    {
+                        _logger.LogWarning(
+                            "Socket Send slow. " +
+                            "SessionId={SessionId} " +
+                            "Bytes={Bytes} " +
+                            "ElapsedMs={ElapsedMs:F2}",
+                            Id,
+                            data.Length,
+                            elapsed.TotalMilliseconds);
+                    }
+                }
+                catch (IOException)
+                {
+                    if (!IsDisconnected)
+                    {
+                        _logger.LogWarning(
+                            "Failed to send data because connection was lost. SessionId={SessionId}",
+                            Id);
+
+                        _ = DisconnectAsync();
+                    }
+
+                    break;
+                }
+                catch (ObjectDisposedException)
+                {
+                    break;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // 정상적인 송신 Loop 종료
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Error occurred in send loop. SessionId={SessionId}",
+                Id);
+
+            _ = DisconnectAsync();
+        }
     }
 
     public async Task DisconnectAsync()
     {
         if (Interlocked.Exchange(ref _isDisconnected, 1) == 1)
             return;
+
+        // 더 이상 새로운 송신 요청을 받지 않는다.
+        _sendQueue.Writer.TryComplete();
 
         _logger.LogInformation(
             "Disconnecting session. SessionId={SessionId} PlayerId={PlayerId}",
@@ -185,26 +303,34 @@ public class PlayerSession
         {
             if (Player != null)
                 await _gameManager.UnregisterPlayer(Player);
-
-            _sessionManager.Remove(this);
-
-            _stream.Close();
-            _client.Close();
-
-            _logger.LogInformation(
-                "Session disconnected. SessionId={SessionId}",
-                Id);
         }
         catch (Exception ex)
         {
             _logger.LogError(
                 ex,
-                "Error occurred while disconnecting session. SessionId={SessionId}",
+                "Error occurred while unregistering player. SessionId={SessionId} PlayerId={PlayerId}",
+                Id,
+                Player?.Id);
+        }
+        finally
+        {
+            _sessionManager.Remove(this);
+
+            try
+            {
+                _stream.Close();
+                _client.Close();
+            }
+            catch
+            {
+                // 이미 종료된 연결
+            }
+
+            _logger.LogInformation(
+                "Session disconnected. SessionId={SessionId}",
                 Id);
         }
-
     }
-
 
     public void UpdateHeartbeat()
     {
@@ -223,14 +349,12 @@ public class PlayerSession
             > TimeSpan.FromMilliseconds(HeartbeatInterval);
     }
 
-    public async Task SendHeartbeatAsync()
+    public Task SendHeartbeatAsync()
     {
         _lastHeartbeatSendTime = DateTime.UtcNow;
 
-        await SendAsync(new S_HeartbeatPacket());
+        return SendAsync(new S_HeartbeatPacket());
     }
-
-
 
     public async Task OnLogin(string nickname)
     {
@@ -263,7 +387,6 @@ public class PlayerSession
 
             return;
         }
-
 
         if (isMatch)
         {
@@ -330,5 +453,3 @@ public class PlayerSession
         await _gameManager.LeaveRoom(Player);
     }
 }
-
-

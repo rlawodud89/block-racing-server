@@ -2,6 +2,7 @@
 using block_racing_server.Game;
 using block_racing_server.Game.Rooms;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
 
@@ -21,6 +22,8 @@ public class TcpServer
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<TcpServer> _logger;
 
+    private int _acceptedCount;
+
     public TcpServer(ILoggerFactory loggerFactory)
     {
         _loggerFactory = loggerFactory;
@@ -37,7 +40,7 @@ public class TcpServer
     public async Task StartAsync(int port)
     {
         _listener = new TcpListener(IPAddress.Any, port);
-        _listener.Start();
+        _listener.Start(1000);
 
         _logger.LogInformation(
             "Server started. Port={Port}",
@@ -49,11 +52,23 @@ public class TcpServer
 
             while (true)
             {
-                TcpClient client = await _listener.AcceptTcpClientAsync();
+                Stopwatch stopwatch = Stopwatch.StartNew();
+
+                TcpClient client =
+                    await _listener.AcceptTcpClientAsync();
+
+                stopwatch.Stop();
+
+                int acceptedCount =
+                    Interlocked.Increment(ref _acceptedCount);
 
                 _logger.LogInformation(
-                    "Client accepted. RemoteEndPoint={RemoteEndPoint}",
+                    "Client accepted. Count={Count} AcceptTime={AcceptTime}ms RemoteEndPoint={RemoteEndPoint}",
+                    acceptedCount,
+                    stopwatch.Elapsed.TotalMilliseconds,
                     client.Client.RemoteEndPoint);
+
+                stopwatch.Restart();
 
                 PlayerSession session =
                     new(
@@ -64,6 +79,13 @@ public class TcpServer
                         _loggerFactory);
 
                 _sessionManager.Add(session);
+
+                stopwatch.Stop();
+
+                _logger.LogInformation(
+                    "Session setup completed. Count={Count} SetupTime={SetupTime}ms",
+                    acceptedCount,
+                    stopwatch.Elapsed.TotalMilliseconds);
 
                 _ = Task.Run(session.StartAsync);
             }

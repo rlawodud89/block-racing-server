@@ -69,6 +69,9 @@ public class SessionManager
     {
         foreach (var session in _sessions.Values)
         {
+            if (session.IsDisconnected)
+                continue;
+
             if (session.IsHeartbeatTimeout())
             {
                 _logger.LogWarning(
