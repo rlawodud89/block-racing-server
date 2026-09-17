@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading.Channels;
+using System.IO;
 
 namespace block_racing_server.Network;
 
@@ -103,7 +104,8 @@ public class PlayerSession
 
                 while (_receiveBuffer.TryReadPacket(out byte[] packet))
                 {
-                    ProcessPacket(packet);
+                    if (!ProcessPacket(packet))
+                        return;
                 }
             }
         }
@@ -134,7 +136,7 @@ public class PlayerSession
         }
     }
 
-    private void ProcessPacket(byte[] packet)
+    private bool ProcessPacket(byte[] packet)
     {
         try
         {
@@ -143,18 +145,32 @@ public class PlayerSession
             // Length skip
             ushort length = reader.ReadUInt16();
 
+            if (length != packet.Length)
+                throw new InvalidDataException(
+                    $"Packet length mismatch. Header={length}, Actual={packet.Length}");
+
             ushort packetId = reader.ReadUInt16();
 
             PacketId id = (PacketId)packetId;
 
             _packetManager.Process(this, id, reader);
+
+            return true;
+        }
+        catch (InvalidDataException)
+        {
+            return false;
         }
         catch (Exception ex)
         {
             _logger.LogError(
                 ex,
-                "Error occurred while processing packet. SessionId={SessionId}",
-                Id);
+                "Error occurred while processing packet. " +
+                "SessionId={SessionId} RemoteEndPoint={RemoteEndPoint}",
+                Id,
+                _client.Client.RemoteEndPoint);
+
+            return false;
         }
     }
 

@@ -2,6 +2,7 @@
 using block_racing_common.Network.Packets;
 using block_racing_server.Network.Handlers;
 using Microsoft.Extensions.Logging;
+using System.IO;
 
 namespace block_racing_server.Network;
 
@@ -47,19 +48,12 @@ public class PacketManager
     {
         if (_handlers.TryGetValue(id, out var handler))
         {
-            //_logger.LogDebug(
-            //    "Processing packet. SessionId={SessionId} PacketId={PacketId}",
-            //    session.Id,
-            //    id);
-
             handler(session, reader);
         }
         else
         {
-            _logger.LogWarning(
-                "Unknown packet received. SessionId={SessionId} PacketId={PacketId}",
-                session.Id,
-                id);
+            throw new InvalidDataException(
+                $"Unknown packet received. PacketId={id}");
         }
     }
 }
