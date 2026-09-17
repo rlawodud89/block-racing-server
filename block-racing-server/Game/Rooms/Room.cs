@@ -38,6 +38,8 @@ public class Room
     private long _currentTick;
     private long _startTick;
 
+    private readonly PacketWriter _syncWriter;
+
 
     public Room(long id, ILoggerFactory loggerFactory, string? code = null)
     {
@@ -46,6 +48,10 @@ public class Room
 
         _loggerFactory = loggerFactory;
         _logger = loggerFactory.CreateLogger<Room>();
+
+        _syncWriter = new PacketWriter(
+            (ushort)PacketId.S_GameState
+            );
     }
 
     public IReadOnlyList<Player> Players => _players;
@@ -375,9 +381,9 @@ public class Room
 
         S_GameStatePacket packet = new(snapshot);
 
-        PacketWriter writer = new((ushort)packet.PacketId);
-        packet.Write(writer);
-        byte[] bytes = writer.ToArray();
+        _syncWriter.Reset((ushort)packet.PacketId);
+        packet.Write(_syncWriter);
+        byte[] bytes = _syncWriter.ToArray();
 
         Player[] players = _players.ToArray();
         foreach (Player player in players)
