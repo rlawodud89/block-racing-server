@@ -24,7 +24,7 @@ public class LineClearSystem
 
     public int TryClearLines(
         Lane lane,
-        IReadOnlyList<FlyingBlockPosition> positions)
+        List<FlyingBlockPosition> positions)
     {
         List<int> completedLines =
             FindCompletedLines(
@@ -34,9 +34,9 @@ public class LineClearSystem
         if (completedLines.Count == 0)
             return 0;
 
-        foreach (FlyingBlockPosition position in positions)
+        for (int i = 0; i < positions.Count; i++)
         {
-            FlyingBlock block = position.Block;
+            FlyingBlock block = positions[i].Block;
 
             if (block.IsFinished)
                 continue;
@@ -45,7 +45,7 @@ public class LineClearSystem
             // 계속 Flying 상태로 유지
             if (!ContributesToLine(
                     block,
-                    position.GridY,
+                    positions[i].GridY,
                     completedLines))
             {
                 continue;
@@ -56,7 +56,7 @@ public class LineClearSystem
             // 제거되지 않은 Cell만 Grid에 정착
             SettleRemainingCells(
                 lane,
-                position,
+                positions[i],
                 completedLines);
 
             block.Finish();
@@ -74,7 +74,7 @@ public class LineClearSystem
     private void SettleRemainingCells(
         Lane lane,
         FlyingBlockPosition position,
-        IReadOnlyList<int> completedLines)
+        List<int> completedLines)
     {
         FlyingBlock block = position.Block;
 
@@ -130,7 +130,7 @@ public class LineClearSystem
 
     private List<int> FindCompletedLines(
         Lane lane,
-        IReadOnlyList<FlyingBlockPosition> positions)
+        List<FlyingBlockPosition> positions)
     {
         List<int> lines = new();
 
@@ -162,16 +162,16 @@ public class LineClearSystem
 
     private bool IsOccupied(
         Lane lane,
-        IReadOnlyList<FlyingBlockPosition> positions,
+        List<FlyingBlockPosition> positions,
         int x,
         int y)
     {
         if (lane.HasBlock(x, y))
             return true;
 
-        foreach (FlyingBlockPosition position in positions)
+        for (int i = 0; i < positions.Count; i++)
         {
-            FlyingBlock block = position.Block;
+            FlyingBlock block = positions[i].Block;
 
             if (block.IsFinished)
                 continue;
@@ -179,7 +179,7 @@ public class LineClearSystem
             foreach (var cell in block.Piece.Cells)
             {
                 int blockX = block.X + cell.X;
-                int blockY = position.GridY + cell.Y;
+                int blockY = positions[i].GridY + cell.Y;
 
                 if (blockX == x &&
                     blockY == y)
