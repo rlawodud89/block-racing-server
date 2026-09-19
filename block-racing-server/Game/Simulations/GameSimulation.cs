@@ -153,10 +153,15 @@ public class GameSimulation
         {
             Lane lane = player.Lane;
 
-            List<FlyingBlock> activeBlocks =
-                lane.FlyingBlocks
-                    .Where(b => !b.IsFinished)
-                    .ToList();
+            List<FlyingBlock> activeBlocks = new();
+
+            foreach (FlyingBlock block in lane.FlyingBlocks)
+            {
+                if (!block.IsFinished)
+                {
+                    activeBlocks.Add(block);
+                }
+            }
 
             if (activeBlocks.Count == 0)
                 continue;

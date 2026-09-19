@@ -1,4 +1,5 @@
 ﻿using block_racing_common.Game.Snapshots;
+using block_racing_server.Game.Simulations.Blocks;
 using block_racing_server.Game.Simulations.Lanes;
 
 namespace block_racing_server.Game.Snapshots;
@@ -39,8 +40,16 @@ public static class LaneSnapshotBuilder
 
     private static List<FlyingBlockSnapshot> CreateFlyingBlocks(Lane lane)
     {
-        return lane.FlyingBlocks
-            .Select(FlyingBlockSnapshotBuilder.Create)
-            .ToList();
+        List<FlyingBlockSnapshot> snapshots =
+            new(lane.FlyingBlocks.Count);
+
+        foreach (FlyingBlock block in lane.FlyingBlocks)
+        {
+            snapshots.Add(
+                FlyingBlockSnapshotBuilder.Create(block)
+            );
+        }
+
+        return snapshots;
     }
 }
