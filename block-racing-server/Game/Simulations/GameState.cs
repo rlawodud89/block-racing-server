@@ -13,8 +13,10 @@ public class GameState
 
     private readonly Dictionary<long, Player> _players = new();
 
-
     public IReadOnlyDictionary<long, Player> Players
+         => _players;
+
+    internal Dictionary<long, Player> PlayerDictionary
         => _players;
 
 

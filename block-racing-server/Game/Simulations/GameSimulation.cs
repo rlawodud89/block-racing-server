@@ -49,8 +49,8 @@ public class GameSimulation
            Players.Count);
     }
 
-    private IReadOnlyDictionary<long, Player> Players
-        => _gameState.Players;
+    private Dictionary<long, Player> Players
+    => _gameState.PlayerDictionary;
 
     public bool IsGameEnd
         => _gameState.IsGameEnd;
@@ -342,10 +342,19 @@ public class GameSimulation
 
     private void SendAttack(Player sender, BlockPiece piece)
     {
-        Player target =
-            Players.Values.First(
-                p => p.Id != sender.Id
-            );
+        Player? target = null;
+
+        foreach (Player player in Players.Values)
+        {
+            if (player.Id != sender.Id)
+            {
+                target = player;
+                break;
+            }
+        }
+
+        if (target == null)
+            return;
 
 
         target.Lane.PendingAttacks.Enqueue(
