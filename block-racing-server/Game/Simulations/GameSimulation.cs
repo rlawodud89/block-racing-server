@@ -168,38 +168,40 @@ public class GameSimulation
 
 
             // ----------------------------------------
-            // 1. 현재 Grid 위치
+            // 1. 현재 Grid 위치 + 이번 Tick의 다음 Grid 위치
             // ----------------------------------------
 
             Dictionary<FlyingBlock, int> currentGridYs =
-                activeBlocks.ToDictionary(
-                    block => block,
-                    block => block.GridY);
-
-
-            // ----------------------------------------
-            // 2. 이번 Tick의 다음 Grid 위치
-            // ----------------------------------------
+                new(activeBlocks.Count);
 
             Dictionary<FlyingBlock, int> nextGridYs =
-                activeBlocks.ToDictionary(
-                    block => block,
-                    block => (int)MathF.Floor(
-                        block.Y +
-                        block.MoveSpeed * deltaTime));
+                new(activeBlocks.Count);
+
+            foreach (FlyingBlock block in activeBlocks)
+            {
+                int currentGridY = block.GridY;
+                int nextGridY = (int)MathF.Floor(
+                    block.Y + block.MoveSpeed * deltaTime);
+
+                currentGridYs.Add(block, currentGridY);
+                nextGridYs.Add(block, nextGridY);
+            }
 
 
             // ----------------------------------------
-            // 3. 현재 위치에서 Line Clear 검사
+            // 2. 현재 위치에서 Line Clear 검사
             // ----------------------------------------
 
             List<FlyingBlockPosition> currentPositions =
-                activeBlocks
-                    .Select(block =>
-                        new FlyingBlockPosition(
-                            block,
-                            currentGridYs[block]))
-                    .ToList();
+                new(activeBlocks.Count);
+
+            foreach (FlyingBlock block in activeBlocks)
+            {
+                currentPositions.Add(
+                    new FlyingBlockPosition(
+                        block,
+                        currentGridYs[block]));
+            }
 
             int clearCount =
                 _lineClearSystem.TryClearLines(
@@ -213,17 +215,23 @@ public class GameSimulation
 
 
             // ----------------------------------------
-            // 4. Tick 사이의 Grid 위치에서
+            // 3. Tick 사이의 Grid 위치에서
             //    Line Clear 검사
             // ----------------------------------------
 
-            int maxSteps =
-                activeBlocks
-                    .Select(block =>
-                        nextGridYs[block] -
-                        currentGridYs[block])
-                    .DefaultIfEmpty(0)
-                    .Max();
+            int maxSteps = 0;
+
+            foreach (FlyingBlock block in activeBlocks)
+            {
+                int steps =
+                    nextGridYs[block] -
+                    currentGridYs[block];
+
+                if (steps > maxSteps)
+                {
+                    maxSteps = steps;
+                }
+            }
 
             for (int step = 1; step <= maxSteps; step++)
             {
@@ -260,7 +268,7 @@ public class GameSimulation
 
 
             // ----------------------------------------
-            // 5. Line Clear 이후 착지 판정
+            // 4. Line Clear 이후 착지 판정
             // ----------------------------------------
 
             foreach (FlyingBlock block in activeBlocks)
@@ -287,7 +295,7 @@ public class GameSimulation
 
 
                 // ------------------------------------
-                // 6. 착지하지 않았다면 실제 이동
+                // 5. 착지하지 않았다면 실제 이동
                 // ------------------------------------
 
                 block.MoveDown(deltaTime);
@@ -295,7 +303,7 @@ public class GameSimulation
 
 
             // ----------------------------------------
-            // 7. 종료된 FlyingBlock 제거
+            // 6. 종료된 FlyingBlock 제거
             // ----------------------------------------
 
             lane.FlyingBlocks.RemoveAll(
