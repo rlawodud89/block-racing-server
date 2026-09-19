@@ -9,32 +9,38 @@ public class GameEndSystem
 {
     public GameEndResult? Update(GameState gameState)
     {
-        Player[] finishedPlayers = gameState.Players.Values
-            .Where(player =>
-                player.Car.Distance >= GameBalance.TargetDistance)
-            .ToArray();
+        Player? winner = null;
+        Player? loser = null;
+        int finishedCount = 0;
 
-        // 아무도 결승선에 도달하지 않음
-        if (finishedPlayers.Length == 0)
+        foreach (Player player in gameState.PlayerDictionary.Values)
+        {
+            if (player.Car.Distance >= GameBalance.TargetDistance)
+            {
+                finishedCount++;
+                winner = player;
+            }
+            else
+            {
+                loser = player;
+            }
+        }
+
+        if (finishedCount == 0)
             return null;
 
-        // 두 플레이어가 동시에 결승선 도달
-        if (finishedPlayers.Length == 2)
+        if (finishedCount == 2)
+        {
             return new GameEndResult(
                 winner: null,
                 loser: null,
                 reason: GameEndReason.Normal
             );
-
-        // 한 명만 결승선 도달
-        Player winner = finishedPlayers[0];
-
-        Player loser = gameState.Players.Values
-            .First(player => player.Id != winner.Id);
+        }
 
         return new GameEndResult(
-            winner,
-            loser,
+            winner!,
+            loser!,
             GameEndReason.Normal
         );
     }
