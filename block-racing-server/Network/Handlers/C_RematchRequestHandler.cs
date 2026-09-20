@@ -18,6 +18,6 @@ public static class C_RematchRequestHandler
         if (room == null)
             return;
 
-        room.RequestRematch(player);
+        _ = room.RequestRematch(player);
     }
 }
