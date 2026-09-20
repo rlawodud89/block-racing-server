@@ -12,6 +12,6 @@ public static class C_InputHandler
             return;
 
 
-        player.Room.EnqueueInput(player, packet.InputType);
+        _ = player.Room.EnqueueInput(player, packet.InputType);
     }
 }

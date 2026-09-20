@@ -6,6 +6,6 @@ public static class C_ReadyHandler
 {
     public static void Handle(PlayerSession session, C_ReadyPacket packet)
     {
-        session.Player?.Room?.SetReady(session.Player);
+        _ = session.Player?.Room?.SetReady(session.Player);
     }
 }
