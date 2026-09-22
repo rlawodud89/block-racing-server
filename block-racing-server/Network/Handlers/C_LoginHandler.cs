@@ -6,6 +6,6 @@ public static class C_LoginHandler
 {
     public static void Handle(PlayerSession session, C_LoginPacket packet)
     {
-        _ = session.OnLogin(packet.Nickname);
+        _ = session.OnLogin();
     }
 }

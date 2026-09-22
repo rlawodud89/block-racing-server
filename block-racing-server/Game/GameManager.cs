@@ -187,10 +187,10 @@ public class GameManager
 
         if (player.MatchState != MatchState.None)
         {
-            _logger.LogWarning(
-                "Create room request rejected because player is already queued. PlayerId={PlayerId} MatchState={MatchState}",
-                player.Id,
-                player.MatchState);
+            //_logger.LogWarning(
+            //    "Create room request rejected because player is already queued. PlayerId={PlayerId} MatchState={MatchState}",
+            //    player.Id,
+            //    player.MatchState);
 
             await player.Session.SendAsync(
                 new S_RoomCreatedPacket
@@ -270,17 +270,17 @@ public class GameManager
             return;
         }
 
-        _logger.LogInformation(
-            "Join room request received. PlayerId={PlayerId} RoomCode={RoomCode}",
-            player.Id,
-            roomCode);
+        //_logger.LogInformation(
+        //    "Join room request received. PlayerId={PlayerId} RoomCode={RoomCode}",
+        //    player.Id,
+        //    roomCode);
 
         if (player.Room != null)
         {
-            _logger.LogWarning(
-                "Join room request rejected because player is already in a room. PlayerId={PlayerId} RoomId={RoomId}",
-                player.Id,
-                player.Room.Id);
+            //_logger.LogWarning(
+            //    "Join room request rejected because player is already in a room. PlayerId={PlayerId} RoomId={RoomId}",
+            //    player.Id,
+            //    player.Room.Id);
 
             await player.Session.SendAsync(
                 new S_RoomJoinedPacket
@@ -293,10 +293,10 @@ public class GameManager
 
         if (player.MatchState != MatchState.None)
         {
-            _logger.LogWarning(
-                "Join room request rejected because player is already queued. PlayerId={PlayerId} MatchState={MatchState}",
-                player.Id,
-                player.MatchState);
+            //_logger.LogWarning(
+            //    "Join room request rejected because player is already queued. PlayerId={PlayerId} MatchState={MatchState}",
+            //    player.Id,
+            //    player.MatchState);
 
             await player.Session.SendAsync(
                 new S_RoomJoinedPacket
@@ -310,14 +310,24 @@ public class GameManager
 
         roomCode = roomCode.Trim().ToUpperInvariant();
 
+        if(roomCode.Length != 6)
+        {
+            await player.Session.SendAsync(
+                new S_RoomJoinedPacket
+                {
+                    Result = RoomJoinResult.RoomNotFound,
+                });
+            return;
+        }
+
         Room? room = _roomManager.Find(roomCode);
 
         if (room == null)
         {
-            _logger.LogWarning(
-                "Join room request rejected because room was not found. PlayerId={PlayerId} RoomCode={RoomCode}",
-                player.Id,
-                roomCode);
+            //_logger.LogWarning(
+            //    "Join room request rejected because room was not found. PlayerId={PlayerId} RoomCode={RoomCode}",
+            //    player.Id,
+            //    roomCode);
 
             await player.Session.SendAsync(
                 new S_RoomJoinedPacket

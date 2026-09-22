@@ -12,6 +12,7 @@ public class Program
         Log.Logger = new LoggerConfiguration()
             .MinimumLevel.Debug()
             .WriteTo.Async(a => a.Console(
+                restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Debug,
                 outputTemplate:
                     "[{Timestamp:HH:mm:ss} {Level:u3}] " +
                     "[{SourceContext}] " +
@@ -19,7 +20,8 @@ public class Program
             .WriteTo.Async(a => a.File(
                 "logs/server-.log",
                 rollingInterval: RollingInterval.Day,
-                retainedFileCountLimit: 7,
+                retainedFileCountLimit: 5,
+                restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information,
                 outputTemplate:
                     "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] " +
                     "[{SourceContext}] " +

@@ -28,6 +28,7 @@ public class PlayerSession
 
     private readonly Channel<byte[]> _sendQueue;
     private Task? _sendLoopTask;
+    private const int MaxSendQueueSize = 256;
 
     private DateTime _lastHeartbeatTime;
     private DateTime _lastHeartbeatSendTime;
@@ -57,11 +58,12 @@ public class PlayerSession
 
         _logger = loggerFactory.CreateLogger<PlayerSession>();
 
-        _sendQueue = Channel.CreateUnbounded<byte[]>(
-            new UnboundedChannelOptions
+        _sendQueue = Channel.CreateBounded<byte[]>(
+            new BoundedChannelOptions(MaxSendQueueSize)
             {
                 SingleReader = true,
-                SingleWriter = false
+                SingleWriter = false,
+                FullMode = BoundedChannelFullMode.Wait
             });
 
         _lastHeartbeatTime = DateTime.UtcNow;
@@ -108,6 +110,10 @@ public class PlayerSession
                         return;
                 }
             }
+        }
+        catch (InvalidDataException)
+        {
+            // 잘못된 클라이언트 입력
         }
         catch (IOException ex)
         {
@@ -187,10 +193,6 @@ public class PlayerSession
         {
             if (!_sendQueue.Writer.TryWrite(data))
             {
-                _logger.LogWarning(
-                    "Failed to enqueue data because send queue is closed. SessionId={SessionId}",
-                    Id);
-
                 _ = DisconnectAsync();
             }
         }
@@ -247,26 +249,26 @@ public class PlayerSession
                 if (IsDisconnected)
                     break;
 
-                var start = Stopwatch.GetTimestamp();
+                // var start = Stopwatch.GetTimestamp();
 
                 try
                 {
                     await _stream.WriteAsync(data);
 
-                    var elapsed =
-                        Stopwatch.GetElapsedTime(start);
+                    //var elapsed =
+                    //    Stopwatch.GetElapsedTime(start);
 
-                    if (elapsed > TimeSpan.FromMilliseconds(10))
-                    {
-                        _logger.LogWarning(
-                            "Socket Send slow. " +
-                            "SessionId={SessionId} " +
-                            "Bytes={Bytes} " +
-                            "ElapsedMs={ElapsedMs:F2}",
-                            Id,
-                            data.Length,
-                            elapsed.TotalMilliseconds);
-                    }
+                    //if (elapsed > TimeSpan.FromMilliseconds(10))
+                    //{
+                    //    _logger.LogWarning(
+                    //        "Socket Send slow. " +
+                    //        "SessionId={SessionId} " +
+                    //        "Bytes={Bytes} " +
+                    //        "ElapsedMs={ElapsedMs:F2}",
+                    //        Id,
+                    //        data.Length,
+                    //        elapsed.TotalMilliseconds);
+                    //}
                 }
                 catch (IOException)
                 {
@@ -372,22 +374,26 @@ public class PlayerSession
         return SendAsync(new S_HeartbeatPacket());
     }
 
-    public async Task OnLogin(string nickname)
+    public async Task OnLogin()
     {
-        Player = new Player(this, Id, nickname);
+        if (Player != null)
+        {
+            return;
+        }
+
+        Player = new Player(this, Id);
 
         _gameManager.RegisterPlayer(Player);
 
         _logger.LogInformation(
-            "Player logged in. SessionId={SessionId} PlayerId={PlayerId} Nickname={Nickname}",
+            "Player logged in. SessionId={SessionId} PlayerId={PlayerId}",
             Id,
-            Player.Id,
-            nickname);
+            Player.Id
+            );
 
         S_LoginPacket responsePacket = new()
         {
-            PlayerId = Id,
-            Nickname = nickname
+            PlayerId = Id
         };
 
         await SendAsync(responsePacket);
@@ -397,9 +403,9 @@ public class PlayerSession
     {
         if (Player == null)
         {
-            _logger.LogWarning(
-                "Match request ignored because player is not logged in. SessionId={SessionId}",
-                Id);
+            //_logger.LogWarning(
+            //    "Match request ignored because player is not logged in. SessionId={SessionId}",
+            //    Id);
 
             return;
         }
@@ -418,9 +424,9 @@ public class PlayerSession
     {
         if (Player == null)
         {
-            _logger.LogWarning(
-                "Create room request ignored because player is not logged in. SessionId={SessionId}",
-                Id);
+            //_logger.LogWarning(
+            //    "Create room request ignored because player is not logged in. SessionId={SessionId}",
+            //    Id);
 
             return;
         }
@@ -436,9 +442,9 @@ public class PlayerSession
     {
         if (Player == null)
         {
-            _logger.LogWarning(
-                "Join room request ignored because player is not logged in. SessionId={SessionId}",
-                Id);
+            //_logger.LogWarning(
+            //    "Join room request ignored because player is not logged in. SessionId={SessionId}",
+            //    Id);
 
             return;
         }
@@ -455,9 +461,9 @@ public class PlayerSession
     {
         if (Player == null)
         {
-            _logger.LogWarning(
-                "Leave room request ignored because player is not logged in. SessionId={SessionId}",
-                Id);
+            //_logger.LogWarning(
+            //    "Leave room request ignored because player is not logged in. SessionId={SessionId}",
+            //    Id);
 
             return;
         }

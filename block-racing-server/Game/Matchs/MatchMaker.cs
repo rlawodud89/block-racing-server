@@ -61,11 +61,11 @@ public class MatchMaker
 
     public void Enqueue(Player player)
     {
-        _logger.LogDebug(
-            "Match enqueue requested. PlayerId={PlayerId} MatchState={MatchState} Registered={Registered}",
-            player.Id,
-            player.MatchState,
-            _players.ContainsKey(player.Id));
+        //_logger.LogDebug(
+        //    "Match enqueue requested. PlayerId={PlayerId} MatchState={MatchState} Registered={Registered}",
+        //    player.Id,
+        //    player.MatchState,
+        //    _players.ContainsKey(player.Id));
 
         if (!_players.TryGetValue(player.Id, out var registeredPlayer))
         {
@@ -87,10 +87,10 @@ public class MatchMaker
 
         if (player.MatchState != MatchState.None)
         {
-            _logger.LogWarning(
-                "Match enqueue ignored because player is not in None state. PlayerId={PlayerId} MatchState={MatchState}",
-                player.Id,
-                player.MatchState);
+            //_logger.LogWarning(
+            //    "Match enqueue ignored because player is not in None state. PlayerId={PlayerId} MatchState={MatchState}",
+            //    player.Id,
+            //    player.MatchState);
 
             return;
         }
@@ -108,9 +108,9 @@ public class MatchMaker
     {
         if (player.MatchState == MatchState.InRoom)
         {
-            _logger.LogWarning(
-                "Match cancellation ignored because player is already in a room. PlayerId={PlayerId}",
-                player.Id);
+            //_logger.LogWarning(
+            //    "Match cancellation ignored because player is already in a room. PlayerId={PlayerId}",
+            //    player.Id);
 
             return;
         }
@@ -162,9 +162,9 @@ public class MatchMaker
 
                 p1.MatchState = MatchState.Queued;
 
-                _logger.LogDebug(
-                    "First player returned to matchmaking queue. PlayerId={PlayerId}",
-                    p1.Id);
+                //_logger.LogDebug(
+                //    "First player returned to matchmaking queue. PlayerId={PlayerId}",
+                //    p1.Id);
 
                 continue;
             }
@@ -221,9 +221,9 @@ public class MatchMaker
 
         player.MatchState = MatchState.Matching;
 
-        _logger.LogDebug(
-           "Player reserved for matchmaking. PlayerId={PlayerId}",
-           player.Id);
+        //_logger.LogDebug(
+        //   "Player reserved for matchmaking. PlayerId={PlayerId}",
+        //   player.Id);
 
         return true;
     }
