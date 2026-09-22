@@ -249,26 +249,26 @@ public class PlayerSession
                 if (IsDisconnected)
                     break;
 
-                var start = Stopwatch.GetTimestamp();
+                // var start = Stopwatch.GetTimestamp();
 
                 try
                 {
                     await _stream.WriteAsync(data);
 
-                    var elapsed =
-                        Stopwatch.GetElapsedTime(start);
+                    //var elapsed =
+                    //    Stopwatch.GetElapsedTime(start);
 
-                    if (elapsed > TimeSpan.FromMilliseconds(10))
-                    {
-                        _logger.LogWarning(
-                            "Socket Send slow. " +
-                            "SessionId={SessionId} " +
-                            "Bytes={Bytes} " +
-                            "ElapsedMs={ElapsedMs:F2}",
-                            Id,
-                            data.Length,
-                            elapsed.TotalMilliseconds);
-                    }
+                    //if (elapsed > TimeSpan.FromMilliseconds(10))
+                    //{
+                    //    _logger.LogWarning(
+                    //        "Socket Send slow. " +
+                    //        "SessionId={SessionId} " +
+                    //        "Bytes={Bytes} " +
+                    //        "ElapsedMs={ElapsedMs:F2}",
+                    //        Id,
+                    //        data.Length,
+                    //        elapsed.TotalMilliseconds);
+                    //}
                 }
                 catch (IOException)
                 {
