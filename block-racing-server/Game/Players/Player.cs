@@ -35,11 +35,10 @@ public class Player
 
     public PlayMode Mode { get; private set; }
 
-    public Player(PlayerSession session, long id, string nickname)
+    public Player(PlayerSession session, long id)
     {
         Session = session;
         Id = id;
-        NickName = nickname;
 
         Lane = new Lane();
         Car = new Car();

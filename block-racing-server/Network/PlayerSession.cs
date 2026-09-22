@@ -374,27 +374,26 @@ public class PlayerSession
         return SendAsync(new S_HeartbeatPacket());
     }
 
-    public async Task OnLogin(string nickname)
+    public async Task OnLogin()
     {
         if (Player != null)
         {
             return;
         }
 
-        Player = new Player(this, Id, nickname);
+        Player = new Player(this, Id);
 
         _gameManager.RegisterPlayer(Player);
 
         _logger.LogInformation(
-            "Player logged in. SessionId={SessionId} PlayerId={PlayerId} Nickname={Nickname}",
+            "Player logged in. SessionId={SessionId} PlayerId={PlayerId}",
             Id,
-            Player.Id,
-            nickname);
+            Player.Id
+            );
 
         S_LoginPacket responsePacket = new()
         {
-            PlayerId = Id,
-            Nickname = nickname
+            PlayerId = Id
         };
 
         await SendAsync(responsePacket);
