@@ -28,6 +28,7 @@ public class PlayerSession
 
     private readonly Channel<byte[]> _sendQueue;
     private Task? _sendLoopTask;
+    private const int MaxSendQueueSize = 256;
 
     private DateTime _lastHeartbeatTime;
     private DateTime _lastHeartbeatSendTime;
@@ -57,11 +58,12 @@ public class PlayerSession
 
         _logger = loggerFactory.CreateLogger<PlayerSession>();
 
-        _sendQueue = Channel.CreateUnbounded<byte[]>(
-            new UnboundedChannelOptions
+        _sendQueue = Channel.CreateBounded<byte[]>(
+            new BoundedChannelOptions(MaxSendQueueSize)
             {
                 SingleReader = true,
-                SingleWriter = false
+                SingleWriter = false,
+                FullMode = BoundedChannelFullMode.Wait
             });
 
         _lastHeartbeatTime = DateTime.UtcNow;
@@ -108,6 +110,10 @@ public class PlayerSession
                         return;
                 }
             }
+        }
+        catch (InvalidDataException)
+        {
+            // 잘못된 클라이언트 입력
         }
         catch (IOException ex)
         {
@@ -187,10 +193,6 @@ public class PlayerSession
         {
             if (!_sendQueue.Writer.TryWrite(data))
             {
-                _logger.LogWarning(
-                    "Failed to enqueue data because send queue is closed. SessionId={SessionId}",
-                    Id);
-
                 _ = DisconnectAsync();
             }
         }
@@ -374,6 +376,11 @@ public class PlayerSession
 
     public async Task OnLogin(string nickname)
     {
+        if (Player != null)
+        {
+            return;
+        }
+
         Player = new Player(this, Id, nickname);
 
         _gameManager.RegisterPlayer(Player);
@@ -397,9 +404,9 @@ public class PlayerSession
     {
         if (Player == null)
         {
-            _logger.LogWarning(
-                "Match request ignored because player is not logged in. SessionId={SessionId}",
-                Id);
+            //_logger.LogWarning(
+            //    "Match request ignored because player is not logged in. SessionId={SessionId}",
+            //    Id);
 
             return;
         }
@@ -418,9 +425,9 @@ public class PlayerSession
     {
         if (Player == null)
         {
-            _logger.LogWarning(
-                "Create room request ignored because player is not logged in. SessionId={SessionId}",
-                Id);
+            //_logger.LogWarning(
+            //    "Create room request ignored because player is not logged in. SessionId={SessionId}",
+            //    Id);
 
             return;
         }
@@ -436,9 +443,9 @@ public class PlayerSession
     {
         if (Player == null)
         {
-            _logger.LogWarning(
-                "Join room request ignored because player is not logged in. SessionId={SessionId}",
-                Id);
+            //_logger.LogWarning(
+            //    "Join room request ignored because player is not logged in. SessionId={SessionId}",
+            //    Id);
 
             return;
         }
@@ -455,9 +462,9 @@ public class PlayerSession
     {
         if (Player == null)
         {
-            _logger.LogWarning(
-                "Leave room request ignored because player is not logged in. SessionId={SessionId}",
-                Id);
+            //_logger.LogWarning(
+            //    "Leave room request ignored because player is not logged in. SessionId={SessionId}",
+            //    Id);
 
             return;
         }
