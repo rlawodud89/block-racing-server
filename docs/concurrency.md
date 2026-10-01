@@ -60,7 +60,7 @@ at GameManager.UnregisterPlayer(Player player)
 at PlayerSession.DisconnectAsync()
 ```
 
-문제가 발생한 호출 흐름은 다음과 같았다.
+문제가 발생한 호출 흐름은 다음과 같습니다.
 
 ```text
 PlayerSession.DisconnectAsync()
@@ -100,7 +100,7 @@ Session C ──→ Task
 
 따라서 Game Loop가 `Room`을 순차적으로 처리하더라도 Session에서 발생하는 상태 변경은 Game Loop와 동시에 실행될 수 있었다.
 
-특히 다음 상태가 여러 Session에서 공유되고 있었다.
+특히 다음 상태가 여러 Session에서 공유되고 있었습니다.
 
 ```text
 _players
@@ -109,7 +109,7 @@ _rematchMap
 State
 ```
 
-또한 다음 메서드가 서로 다른 Session Task에서 동시에 호출될 수 있었다.
+또한 다음 메서드가 서로 다른 Session Task에서 동시에 호출될 수 있었습니다.
 
 ```text
 AddPlayer()
@@ -123,7 +123,7 @@ EnqueueInput()
 RequestRematch()
 ```
 
-즉, **Game Loop 자체는 단일 실행이지만 Room의 모든 상태 접근이 단일 실행을 보장하는 구조는 아니었다.**
+즉, **Game Loop 자체는 단일 실행이지만 Room의 모든 상태 접근이 단일 실행을 보장하는 구조는 아니었습니다.**
 
 ---
 
