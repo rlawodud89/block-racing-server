@@ -59,6 +59,22 @@ Client
 
 ---
 
+# 📚 Documentation
+
+프로젝트의 주요 설계와 구현 과정은 별도의 문서로 정리했습니다.
+
+| 문서                                   | 내용                                                           |
+| ------------------------------------ | ------------------------------------------------------------ |
+| [Architecture](docs/architecture.md) | 전체 시스템 구조 및 주요 컴포넌트 책임                                       |
+| [Network](docs/network.md)           | TCP 통신, Packet 구조, Framing, Serialization, Packet Processing |
+| [Matchmaking](docs/matchmaking.md)   | MatchMaker, Room Lifecycle, Match State 및 동시성 처리             |
+| [Game Loop](docs/game-loop.md)       | Fixed Tick, Input 처리, Game Simulation 및 게임 규칙                |
+| [Snapshot](docs/snapshot.md)         | Snapshot 생성, 데이터 구조 및 State Synchronization                  |
+| [Concurrency](docs/concurrency.md)   | 동시 접속 테스트, Race Condition 발견 및 해결                            |
+| [Performance](docs/performance.md)   | 성능 측정, Allocation/GC 분석 및 최적화 결과                             |
+
+---
+
 # 🏗️ Architecture
 
 Server는 **Network Layer**와 **Game Layer**를 중심으로 구성했습니다.
@@ -171,7 +187,7 @@ None
  ↓
 Queued
  ↓
-Match
+Matching
  ↓
 InRoom
 ```
@@ -186,15 +202,15 @@ Player B ──┘
 
 ```text
 Waiting
-  ↓
+   ↓
 Ready
-  ↓
+   ↓
 Starting
-  ↓
+   ↓
 Playing
-  ↓
-Ended
-  ↓
+   ↓
+Result
+   ↓
 Closing
 ```
 
@@ -247,16 +263,20 @@ Server는 게임 상태를 Snapshot으로 변환하여 Client에 전달합니다
 ```text
 GameSimulation
       ↓
-Game State
+GameState
+      ↓
+GameStateSnapshotBuilder
       ↓
 GameStateSnapshot
-      │
       ├── Tick
+      ├── TargetDistance
       └── Players
-             ├── PlayerSnapshot
-             └── LaneSnapshot
-                    ├── Blocks
-                    └── FlyingBlocks
+            └── PlayerSnapshot
+                  └── LaneSnapshot
+                        ├── Blocks
+                        └── FlyingBlocks
+      ↓
+S_GameStatePacket
       ↓
 Client
 ```
@@ -324,6 +344,7 @@ Server 상태 추적을 위해 Logging 시스템을 사용합니다.
 
 ```text
 block-racing-server/
+
 │
 ├── Common/                    # Shared Module
 │
@@ -351,6 +372,15 @@ block-racing-server/
 │   │   └── TcpServer.cs
 │   │
 │   └── Program.cs
+│
+├── docs/
+│   ├── architecture.md
+│   ├── network.md
+│   ├── matchmaking.md
+│   ├── game-loop.md
+│   ├── snapshot.md
+│   ├── concurrency.md
+│   └── performance.md
 │
 └── README.md
 ```
